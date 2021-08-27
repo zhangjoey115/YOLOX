@@ -174,7 +174,8 @@ class Trainer:
         )
         # Tensorboard logger
         if self.rank == 0:
-            self.tblogger = SummaryWriter(self.file_name)
+            # self.tblogger = SummaryWriter(self.file_name)
+            pass
 
         logger.info("Training start...")
         logger.info("\n{}".format(model))
@@ -196,6 +197,7 @@ class Trainer:
             else:
                 self.model.head.use_l1 = True
             self.exp.eval_interval = 1
+            self.exp.eval_interval = self.exp.no_aug_eval_epochs    # zjw, org=1
             if not self.no_aug:
                 self.save_ckpt(ckpt_name="last_mosaic_epoch")
 
@@ -304,8 +306,9 @@ class Trainer:
         )
         self.model.train()
         if self.rank == 0:
-            self.tblogger.add_scalar("val/COCOAP50", ap50, self.epoch + 1)
-            self.tblogger.add_scalar("val/COCOAP50_95", ap50_95, self.epoch + 1)
+            # self.tblogger.add_scalar("val/COCOAP50", ap50, self.epoch + 1)
+            # self.tblogger.add_scalar("val/COCOAP50_95", ap50_95, self.epoch + 1)
+            logger.info("val/COCOAP50: {:.4f}, val/COCOAP50_95: {:.4f}".format(ap50, ap50_95))
             logger.info("\n" + summary)
         synchronize()
 

@@ -48,6 +48,7 @@ class Exp(BaseExp):
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
         self.no_aug_epochs = 15
+        self.no_aug_eval_epochs = 1     # zjw
         self.min_lr_ratio = 0.05
         self.ema = True
 
