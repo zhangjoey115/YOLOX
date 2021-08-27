@@ -7,3 +7,5 @@ from .coco_classes import COCO_CLASSES
 from .datasets_wrapper import ConcatDataset, Dataset, MixConcatDataset
 from .mosaicdetection import MosaicDetection
 from .voc import VOCDetection
+from .tt100k import TT100kDetection
+from .tt100k_classes import TT100K_CLASSES

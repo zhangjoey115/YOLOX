@@ -4,3 +4,4 @@
 
 from .coco_evaluator import COCOEvaluator
 from .voc_evaluator import VOCEvaluator
+from .tt100k_evaluator import TT100kEvaluator
