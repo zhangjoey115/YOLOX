@@ -68,10 +68,100 @@ def analyse_dataset(anno_dir):
     for name in top_list_sort:
         print("\t\"{}\",".format(name))
 
+    # print i/p/w count
+    cls_cnt = {'i': 0, 'p': 0, 'w': 0}
+    for v in class_dict.items():
+        name = v[0]
+        if name.startswith('i'):
+            cls_cnt['i'] += v[1]
+        elif name.startswith('p'):
+            cls_cnt['p'] += v[1]
+        elif name.startswith('w'):
+            cls_cnt['w'] += v[1]
+        else:
+            print("Error with unknown class {}!".format(name))
+    print('Class count i = {}, p = {}, w = {}.'.format(cls_cnt['i'], cls_cnt['p'], cls_cnt['w']))
+
+
+def divide_anno_classes(name, cls_cnt):
+    """
+    class_div0 = {'45classes'}
+    class_div1 = {'45classes', 'other'}
+    class_div = {'i': ['il', 'ip', 'i_other'],
+                 'p': ['pm', 'pa', 'pl', 'pr', 'ph', 'pw', 'p_other'],
+                 'w': ['w']}
+    class_div2 = {'i', 'p', 'w'}
+    class_div3 = {'i_num', 'ip', 'i_other'
+                 'p_num', 'p_other'
+                 'w'}
+    class_div4 = {'i_num', 'ip', 'i_other'
+                 'p_num', 'pn_x', 'ps', 'pg', 'p_other'
+                 'w'}
+    class_div5 = {'i': ['il', 'ip', 'i_other'],
+                 'p': ['pm', 'pa', 'pl', 'pr', 'ph', 'pw', 'p_other'],
+                 'w': ['w']}
+    """
+    cls_cnt = {'i': 0, 'p': 0, 'w': 0}
+    class_div = {'i': ['il', 'ip', 'i_other'],
+                 'p': ['pm', 'pa', 'pl', 'pr', 'ph', 'pw', 'p_other'],
+                 'w': ['w']}
+
+    def divide_sub_anno(name, class_list):
+        name_new = ''
+        for type in class_list:
+            if name.startswith(type):
+                name_new = type
+                break
+        if name_new == '':
+            name_new = class_list[-1]
+        return name_new
+
+    if name.startswith('i'):
+        cls_cnt['i'] += 1
+        name_new = divide_sub_anno(name, class_div['i'])
+    elif name.startswith('p'):
+        cls_cnt['p'] += 1
+        name_new = divide_sub_anno(name, class_div['p'])
+    elif name.startswith('w'):
+        cls_cnt['w'] += 1
+        name_new = divide_sub_anno(name, class_div['w'])
+    else:
+        print("Error with unknown class {}!".format(name))
+
+    return name_new, cls_cnt
+
+
+def change_annotation(anno_dir, anno_dir_new=None):
+    if not os.path.exists(anno_dir):
+        print("Annotation Dir not Exist!")
+        return
+
+    os.makedirs(anno_dir_new, exist_ok=True)
+    anno_list = os.listdir(anno_dir)
+    cls_cnt = {'i': 0, 'p': 0, 'w': 0}
+    for anno_file in anno_list:
+        lines = []
+        with open(os.path.join(anno_dir, anno_file), 'r') as f:
+            lines = f.readlines()
+        with open(os.path.join(anno_dir_new, anno_file), 'w') as f:
+            for line in lines:
+                if line.find("<name>") != -1:
+                    words = re.split("<|>", line)
+                    name = words[2]
+                    name, cls_cnt = divide_anno_classes(name, cls_cnt)
+                    line_new = line.replace(words[2], name, 1)
+                    # line_new = '<name>' + name + '</name>'
+                    f.write(line_new)                    
+                else:
+                    f.write(line)
+    print('Finish Anno Change! Class count i = {}, p = {}, w = {}.'.format(cls_cnt['i'], cls_cnt['p'], cls_cnt['w']))
+
 
 if __name__ == "__main__":
     # option = 'BUILD_DATASET'
-    option = 'ANALYSE_DATASET'
+    # option = 'ANALYSE_DATASET'
+    # option = 'CHANGE_ANNOTATION'
+    option = 'CHANGE_ANNOTATION'
     if option == 'BUILD_DATASET':
         subprocess.call("rm -rf tt100k2021",  shell=True)
         subprocess.call("mkdir -p tt100k2021/Annotations",  shell=True)
@@ -104,3 +194,9 @@ if __name__ == "__main__":
         print("Test Summary:")
         anno_dir = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/xmlLabel/test/"
         analyse_dataset(anno_dir)
+
+    elif option == 'CHANGE_ANNOTATION':
+        print("Change Annotation to 3 classed: i/p/w")
+        anno_dir = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021/Annotations_org/"
+        anno_dir_new = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021/Annotations_5/"
+        change_annotation(anno_dir, anno_dir_new)

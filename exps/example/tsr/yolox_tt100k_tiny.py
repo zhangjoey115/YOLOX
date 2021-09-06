@@ -6,24 +6,30 @@ import torch.distributed as dist
 
 from yolox.data import get_yolox_datadir
 from yolox.exp import Exp as MyExp
+from yolox.data.datasets.tt100k_classes import TT100K_CLASSES
 
 
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
-        self.num_classes = 45
+        self.num_classes = len(TT100K_CLASSES)      # 3    # 45
         self.depth = 0.33
-        self.width = 0.50
-        self.warmup_epochs = 2
-        self.max_epoch = 200
-        self.no_aug_epochs = 50
+        self.width = 0.375
+        self.warmup_epochs = 1
+        self.max_epoch = 500
+        self.no_aug_epochs = 100
         self.no_aug_eval_epochs = 5
+        self.eval_interval = 10
         self.basic_lr_per_img = 1.0e-3 / 8.0      # devide batch_size
-        self.min_lr_ratio = 0.01
-        self.input_size = (640, 640)
-        self.test_size = (640, 640)
+        self.min_lr_ratio = 0.005
+        self.input_size = (416, 416)
+        self.test_size = (416, 416)
+        # self.input_size = (640, 640)
+        # self.test_size = (640, 640)
+        self.mixup_prob = 0.0       # 1.0
+        self.mosaic_scale = (0.5, 2)
         # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.exp_name = "yolox_tt100k_s_test"
+        self.exp_name = "yolox_tt100k_tiny11_416Pre_0_0.5_500_1e-3"
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False, cache_img=False):
         from yolox.data import (

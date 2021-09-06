@@ -6,24 +6,25 @@ import torch.distributed as dist
 
 from yolox.data import get_yolox_datadir
 from yolox.exp import Exp as MyExp
+from yolox.data.datasets.tt100k_classes import TT100K_CLASSES
 
 
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
-        self.num_classes = 45
+        self.num_classes = len(TT100K_CLASSES)      # 3    # 45
         self.depth = 0.33
         self.width = 0.50
         self.warmup_epochs = 2
-        self.max_epoch = 50
-        self.no_aug_epochs = 50
+        self.max_epoch = 600
+        self.no_aug_epochs = 100
         self.no_aug_eval_epochs = 5
-        self.basic_lr_per_img = 1.0e-5 / 6.0      # devide batch_size
-        self.min_lr_ratio = 1
+        self.basic_lr_per_img = 1.5e-3 / 12.0      # devide batch_size
+        self.min_lr_ratio = 0.002
         self.input_size = (640, 640)
         self.test_size = (640, 640)
         # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.exp_name = "yolox_tt100k_s_350-400"
+        self.exp_name = "yolox_tt100k_s_0-600"
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False, cache_img=False):
         from yolox.data import (
@@ -46,7 +47,10 @@ class Exp(MyExp):
                 data_dir=os.path.join(get_yolox_datadir(), "tt100k_part"),
                 image_sets=[('2021', 'train')],
                 img_size=self.input_size,
-                preproc=TrainTransform(max_labels=50),
+                preproc=TrainTransform(
+                    max_labels=50,
+                    flip_prob=self.flip_prob,
+                    hsv_prob=self.hsv_prob),
                 cache=cache_img,
             )
 
@@ -54,10 +58,14 @@ class Exp(MyExp):
             dataset,
             mosaic=not no_aug,
             img_size=self.input_size,
-            preproc=TrainTransform(max_labels=120),
+            preproc=TrainTransform(
+                max_labels=120,
+                flip_prob=self.flip_prob,
+                hsv_prob=self.hsv_prob),
             degrees=self.degrees,
             translate=self.translate,
-            scale=self.scale,
+            mosaic_scale=self.mosaic_scale,
+            mixup_scale=self.mixup_scale,
             shear=self.shear,
             perspective=self.perspective,
             enable_mixup=self.enable_mixup,

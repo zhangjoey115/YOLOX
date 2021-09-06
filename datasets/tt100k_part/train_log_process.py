@@ -13,7 +13,23 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--input",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_100/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_250-350/train_log.txt",
-                    default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_350-400/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_350-400/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_0-600/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano_0-100_1e-6/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_tiny_100_1e-6_no_aug/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano3_30_1e-5/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano3_100_5e-5/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano3_200_2e-4/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano5_400_5e-4/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano5_400-500_1e-5/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano5_500-700_5e-6/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano5_700-1000_1e-6/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano640_45_200_1e-3/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano45t_416_0_0.1_20_1e-3/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano45t_416_0_0.5_30_1e-3/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano3_640NP_0_0.5_500_1e-3/train_log.txt",
+                    default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano11_416Pre_0_0.5_400_1e-3/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_tiny11_416Pre_0_0.5_500_1e-3/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_0-300/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_0-300_r216_b8/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_100-250/train_log.txt",
@@ -62,7 +78,7 @@ def main():
                    "total_loss_avg": list(), "iou_loss_avg": list(), "l1_loss_avg": list(), "conf_loss_avg": list(), "cls_loss_avg": list(),
                    "lr": list()}
     result_dict_ap = {"epoch_num": list(), "mAP50": list(), "mAP50_90": list()}
-    iter_one_ep = 1006   # 1509  # 1006  # 755
+    iter_one_ep = 755   # 503   # 1509  # 1006  # 755
     avg_count = 10
     last_epoch, last_iter = 0.0, 0
     with open(file_name, 'r') as f:
@@ -124,45 +140,63 @@ def main():
         result_dict_ap["mAP50"].append(dict_tmp["mAP50"])
         result_dict_ap["mAP50_90"].append(dict_tmp["mAP50_90"])
 
-    plt.figure(22, figsize=(16, 9), dpi=80)
-    ax = plt.subplot(221)
-    ax.set_ylim(0, 10)
-    ax.grid()
-    plt.title("loss")
-    plt.xlabel("epoch")
-    plt.plot(result_dict["epoch_num"], result_dict["total_loss"], label="total_loss")
-    plt.plot(result_dict["epoch_num"], result_dict["iou_loss"], label="iou_loss")
-    plt.plot(result_dict["epoch_num"], result_dict["l1_loss"], label="l1_loss")
-    plt.plot(result_dict["epoch_num"], result_dict["conf_loss"], label="conf_loss")
-    plt.plot(result_dict["epoch_num"], result_dict["cls_loss"], label="cls_loss")
-    plt.legend(ncol=2, bbox_to_anchor=(0, 1), loc='lower left')
+    plt_conf = "MULTI"
+    if plt_conf == 'MULTI':
+        plt.figure(22, figsize=(16, 9), dpi=80)
+        ax = plt.subplot(221)
+        ax.set_ylim(0, 10)
+        ax.grid()
+        plt.title("loss")
+        plt.xlabel("epoch")
+        plt.plot(result_dict["epoch_num"], result_dict["total_loss"], label="total_loss")
+        plt.plot(result_dict["epoch_num"], result_dict["iou_loss"], label="iou_loss")
+        plt.plot(result_dict["epoch_num"], result_dict["l1_loss"], label="l1_loss")
+        plt.plot(result_dict["epoch_num"], result_dict["conf_loss"], label="conf_loss")
+        plt.plot(result_dict["epoch_num"], result_dict["cls_loss"], label="cls_loss")
+        plt.legend(ncol=2, bbox_to_anchor=(0, 1), loc='lower left')
 
-    ax = plt.subplot(222)
-    ax.set_ylim(0, 10)
-    ax.grid()
-    plt.title("loss_avg")
-    plt.xlabel("epoch")
-    plt.plot(result_dict["epoch_num"], result_dict["total_loss_avg"], label="total_loss_avg")
-    plt.plot(result_dict["epoch_num"], result_dict["iou_loss_avg"], label="iou_loss_avg")
-    plt.plot(result_dict["epoch_num"], result_dict["l1_loss_avg"], label="l1_loss_avg")
-    plt.plot(result_dict["epoch_num"], result_dict["conf_loss_avg"], label="conf_loss_avg")
-    plt.plot(result_dict["epoch_num"], result_dict["cls_loss_avg"], label="cls_loss_avg")
-    plt.legend(ncol=2, bbox_to_anchor=(0, 1), loc='lower left')
+        ax = plt.subplot(222)
+        ax.set_ylim(0, 10)
+        ax.grid()
+        plt.title("loss_avg")
+        plt.xlabel("epoch")
+        plt.plot(result_dict["epoch_num"], result_dict["total_loss_avg"], label="total_loss_avg")
+        plt.plot(result_dict["epoch_num"], result_dict["iou_loss_avg"], label="iou_loss_avg")
+        plt.plot(result_dict["epoch_num"], result_dict["l1_loss_avg"], label="l1_loss_avg")
+        plt.plot(result_dict["epoch_num"], result_dict["conf_loss_avg"], label="conf_loss_avg")
+        plt.plot(result_dict["epoch_num"], result_dict["cls_loss_avg"], label="cls_loss_avg")
+        plt.legend(ncol=2, bbox_to_anchor=(0, 1), loc='lower left')
 
-    ax = plt.subplot(223)
-    ax.grid()
-    plt.title("lr")
-    plt.xlabel("iters")
-    plt.plot(result_dict["epoch_num"], result_dict["lr"], label="lr")
+        ax = plt.subplot(223)
+        ax.grid()
+        plt.title("lr")
+        plt.xlabel("iters")
+        plt.plot(result_dict["epoch_num"], result_dict["lr"], label="lr")
 
-    ax = plt.subplot(224)
-    ax.set_ylim(0.6, 1)
-    ax.grid()
-    plt.title("mAP")
-    plt.xlabel("epoch")
-    plt.plot(result_dict_ap["epoch_num"], result_dict_ap["mAP50"], label="mAP50")
-    plt.plot(result_dict_ap["epoch_num"], result_dict_ap["mAP50_90"], label="mAP50_90")
-    plt.legend(ncol=2, bbox_to_anchor=(0, 1), loc='lower left')
+        ax = plt.subplot(224)
+        print(result_dict_ap)
+        # ax.set_ylim(0.0, 1)
+        ax.grid()
+        plt.title("mAP")
+        plt.xlabel("epoch")
+        plt.plot(result_dict_ap["epoch_num"], result_dict_ap["mAP50"], "*", label="mAP50")
+        plt.plot(result_dict_ap["epoch_num"], result_dict_ap["mAP50_90"], "*", label="mAP50_90")
+        plt.legend(ncol=2, bbox_to_anchor=(0, 1), loc='lower left')
+
+    else:
+        plt.figure(figsize=(16, 9), dpi=80)
+        ax = plt.subplot()
+        ax.set_ylim(0, 20)
+        ax.grid()
+        plt.title("loss")
+        plt.xlabel("epoch")
+        plt.plot(result_dict["epoch_num"], result_dict["total_loss"], label="total_loss")
+        plt.plot(result_dict["epoch_num"], result_dict["iou_loss"], label="iou_loss")
+        plt.plot(result_dict["epoch_num"], result_dict["l1_loss"], label="l1_loss")
+        plt.plot(result_dict["epoch_num"], result_dict["conf_loss"], label="conf_loss")
+        plt.plot(result_dict["epoch_num"], result_dict["cls_loss"], label="cls_loss")
+        plt.legend(ncol=2, bbox_to_anchor=(0, 1), loc='lower left')
+
 
     loss_fig = os.path.join(file_path, "train_loss.jpg")
     plt.savefig(loss_fig)
