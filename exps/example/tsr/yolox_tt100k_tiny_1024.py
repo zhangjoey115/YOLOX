@@ -2,7 +2,6 @@
 import os
 
 import torch
-import torch.nn as nn
 import torch.distributed as dist
 
 from yolox.data import get_yolox_datadir
@@ -15,43 +14,23 @@ class Exp(MyExp):
         super(Exp, self).__init__()
         self.num_classes = len(TT100K_CLASSES)      # 3    # 45
         self.depth = 0.33
-        self.width = 0.25
+        self.width = 0.375
         self.warmup_epochs = 1
-        self.max_epoch = 400
-        self.no_aug_epochs = 100
+        self.max_epoch = 100
+        self.no_aug_epochs = 15
         self.no_aug_eval_epochs = 5
-        self.eval_interval = 10
+        self.eval_interval = 5
         self.basic_lr_per_img = 1.0e-3 / 8.0      # devide batch_size
-        self.min_lr_ratio = 0.005
+        self.min_lr_ratio = 0.05
         # self.input_size = (416, 416)
         # self.test_size = (416, 416)
-        self.input_size = (640, 640)
-        self.test_size = (640, 640)
+        self.input_size = (1024, 1024)
+        self.test_size = (1024, 1024)
         # self.multiscale_range = 0
         self.mixup_prob = 0.0       # 1.0
         self.mosaic_scale = (0.5, 2)
         # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        # self.exp_name = "test_nano640_210906/yolox_tt100k_nano11_640Pre_newCs_mulR0_0_0.5_20_1e-3"
-        self.exp_name = "train_nt11_640_210906/yolox_tt100k_nano11_640Pre_400_1e-3"
-
-    def get_model(self, sublinear=False):
-
-        def init_yolo(M):
-            for m in M.modules():
-                if isinstance(m, nn.BatchNorm2d):
-                    m.eps = 1e-3
-                    m.momentum = 0.03
-        if "model" not in self.__dict__:
-            from yolox.models import YOLOX, YOLOPAFPN, YOLOXHead
-            in_channels = [256, 512, 1024]
-            # NANO model use depthwise = True, which is main difference.
-            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels, depthwise=True)
-            head = YOLOXHead(self.num_classes, self.width, in_channels=in_channels, depthwise=True)
-            self.model = YOLOX(backbone, head)
-
-        self.model.apply(init_yolo)
-        self.model.head.initialize_biases(1e-2)
-        return self.model
+        self.exp_name = "train_nt11_640_210906/yolox_tt100k_tiny11_1024Pre_100_1e-3"
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False, cache_img=False):
         from yolox.data import (

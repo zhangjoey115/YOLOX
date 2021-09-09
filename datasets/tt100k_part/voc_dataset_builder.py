@@ -56,7 +56,7 @@ def analyse_dataset(anno_dir):
     print(class_dict_sort_v)
 
     # find top several classes
-    top_num = 45
+    top_num = 150   # 45
     top_list = list()
     for i in range(top_num):
         top_list.append(class_dict_sort_v[i][0])
@@ -97,8 +97,18 @@ def divide_anno_classes(name, cls_cnt):
     class_div4 = {'i_num', 'ip', 'i_other'
                  'p_num', 'pn_x', 'ps', 'pg', 'p_other'
                  'w'}
-    class_div5 = {'i': ['il', 'ip', 'i_other'],
+    class_div = {'i': ['il', 'ip', 'i_other'],                          # 11
                  'p': ['pm', 'pa', 'pl', 'pr', 'ph', 'pw', 'p_other'],
+                 'w': ['w']}
+    class_div = {'i': ['il50', 'il60', 'il70', 'il80', 'il90', 'il100', 'il110',
+                       'ip', 'i_other'],
+                 'p': ['pm20', 'pm30', 'pm55', xxx
+                       'pa10', 'pa12', 'pa13', 'pa14',
+                       'pl5', 'pl10', 'pl15', 'pl20', 'pl25', 'pl30', 'pl35', 'pl40', 'pl50', 'pl60', 'pl70', 'pl80', 'pl90', 'pl100', 'pl110', 'pl120',
+                       'pr', xxx
+                       'ph1.8', 'ph2', 'ph2.2', 'ph2.5', 'ph2.8', 'ph2.9', 'ph3', 'ph3.5', 'ph4', 'ph4.2', 'ph4.3', 'ph4.5', 'ph4.8', 'ph5',
+                       'pw', xxx
+                       'p_other'],
                  'w': ['w']}
     """
     cls_cnt = {'i': 0, 'p': 0, 'w': 0}
@@ -161,7 +171,7 @@ if __name__ == "__main__":
     # option = 'BUILD_DATASET'
     # option = 'ANALYSE_DATASET'
     # option = 'CHANGE_ANNOTATION'
-    option = 'CHANGE_ANNOTATION'
+    option = 'ANALYSE_DATASET'
     if option == 'BUILD_DATASET':
         subprocess.call("rm -rf tt100k2021",  shell=True)
         subprocess.call("mkdir -p tt100k2021/Annotations",  shell=True)
