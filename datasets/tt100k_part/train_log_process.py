@@ -35,8 +35,10 @@ parser.add_argument("--input",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/test_nano640_210906/yolox_tt100k_nano11_640NP_newCs_0_0.5_20_1e-3/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_nt11_640_210906/yolox_tt100k_nano11_640Pre_400_1e-3/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_nt11_640_210906/yolox_tt100k_nano11_1024Pre_100_1e-3/train_log.txt",
-                    default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_nt11_640_210906/yolox_tt100k_nano11_1024Pre_100-300_5e-5/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_nt11_640_210906/yolox_tt100k_tiny11_1024Pre_100_1e-3/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_nt11_640_210906/yolox_tt100k_nano11_1024Pre_100-300_5e-5/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_n_pl15_1024_210913/yolox_tt100k_nano15_1024Pre_300_1e-3/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_n_pl15_1024_210913/yolox_tt100k_nano15_1024Pre_300-600_1e-5/train_log.txt",
+                    default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_crop100_dense_pl15_210915/tsr_2nd_dense_16_100_500_1e-3/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_0-300/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_0-300_r216_b8/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_100-250/train_log.txt",
@@ -151,7 +153,7 @@ def main():
     if plt_conf == 'MULTI':
         plt.figure(22, figsize=(16, 9), dpi=80)
         ax = plt.subplot(221)
-        ax.set_ylim(0, 10)
+        # ax.set_ylim(0, 10)
         ax.grid()
         plt.title("loss")
         plt.xlabel("epoch")
@@ -163,7 +165,7 @@ def main():
         plt.legend(ncol=2, bbox_to_anchor=(0, 1), loc='lower left')
 
         ax = plt.subplot(222)
-        ax.set_ylim(0, 10)
+        # ax.set_ylim(0, 10)
         ax.grid()
         plt.title("loss_avg")
         plt.xlabel("epoch")
@@ -191,18 +193,24 @@ def main():
         plt.legend(ncol=2, bbox_to_anchor=(0, 1), loc='lower left')
 
     else:
-        plt.figure(figsize=(16, 9), dpi=80)
-        ax = plt.subplot()
-        ax.set_ylim(0, 20)
+        plt.figure(21, figsize=(16, 12), dpi=80)
+        ax = plt.subplot(211)
+        # ax.set_ylim(0, 10)
         ax.grid()
-        plt.title("loss")
+        plt.title("loss_avg")
         plt.xlabel("epoch")
-        plt.plot(result_dict["epoch_num"], result_dict["total_loss"], label="total_loss")
-        plt.plot(result_dict["epoch_num"], result_dict["iou_loss"], label="iou_loss")
-        plt.plot(result_dict["epoch_num"], result_dict["l1_loss"], label="l1_loss")
-        plt.plot(result_dict["epoch_num"], result_dict["conf_loss"], label="conf_loss")
-        plt.plot(result_dict["epoch_num"], result_dict["cls_loss"], label="cls_loss")
+        plt.plot(result_dict["epoch_num"], result_dict["total_loss_avg"], label="total_loss_avg")
+        plt.plot(result_dict["epoch_num"], result_dict["iou_loss_avg"], label="iou_loss_avg")
+        plt.plot(result_dict["epoch_num"], result_dict["l1_loss_avg"], label="l1_loss_avg")
+        plt.plot(result_dict["epoch_num"], result_dict["conf_loss_avg"], label="conf_loss_avg")
+        plt.plot(result_dict["epoch_num"], result_dict["cls_loss_avg"], label="cls_loss_avg")
         plt.legend(ncol=2, bbox_to_anchor=(0, 1), loc='lower left')
+
+        ax = plt.subplot(212)
+        ax.grid()
+        plt.title("lr")
+        plt.xlabel("iters")
+        plt.plot(result_dict["epoch_num"], result_dict["lr"], label="lr")
 
 
     loss_fig = os.path.join(file_path, "train_loss.jpg")

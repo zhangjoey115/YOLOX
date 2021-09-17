@@ -8,7 +8,7 @@ script_path = os.path.realpath(__file__)
 script_path = os.path.dirname(script_path)
 
 
-def create_crop_dataset(img_dir, anno_dir, save_dir):
+def create_crop_dataset(img_dir, anno_dir, img_save_dir):
     img_list = os.listdir(img_dir)
     print("Total image num is {}".format(len(img_list)))
     anno_list = os.listdir(anno_dir)
@@ -22,7 +22,7 @@ def create_crop_dataset(img_dir, anno_dir, save_dir):
         anno_path = os.path.join(anno_dir, name_base+'.xml')
         label_list, _ = get_label_info(anno_path)
         img_path = os.path.join(img_dir, name)
-        crop_one_img_by_label(img_path, label_list, save_dir)
+        crop_one_img_by_label(img_path, label_list, img_save_dir)
 
         if (i+1) % 100 == 0:
             print("Finish crop {} images".format(i+1))
@@ -88,8 +88,12 @@ if __name__ == "__main__":
     # option = 'CROP_SIGNS'
     option = 'CROP_SIGNS'
     if option == 'CROP_SIGNS':
-        img_dir = '/home/zjw/workspace/DL_Vision/dataset/TT100k/tt100k_2021/train/'
-        anno_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/xmlLabel/train/'
-        save_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/JPEGImages2/'
-        os.makedirs(save_dir, exist_ok=True)
-        create_crop_dataset(img_dir, anno_dir, save_dir)
+        # img_dir = '/home/zjw/workspace/DL_Vision/dataset/TT100k/tt100k_2021/train/'
+        # anno_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/xmlLabel/train/'
+        # img_save_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/train/'
+        img_dir = '/home/zjw/workspace/DL_Vision/dataset/TT100k/tt100k_2021/test/'
+        anno_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/xmlLabel/test/'
+        img_save_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/test/'
+        anno_save_dir = ''
+        os.makedirs(img_save_dir, exist_ok=True)
+        create_crop_dataset(img_dir, anno_dir, img_save_dir)
