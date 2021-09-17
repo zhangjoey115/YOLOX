@@ -78,6 +78,7 @@ class Trainer:
     def train_in_epoch(self):
         for self.epoch in range(self.start_epoch, self.max_epoch):
             self.before_epoch()
+            # self.evaluate_and_save_model()      # zjw: tmp
             self.train_in_iter()
             self.after_epoch()
 
@@ -98,6 +99,8 @@ class Trainer:
         data_end_time = time.time()
 
         with torch.cuda.amp.autocast(enabled=self.amp_training):
+            # print(inps.size())
+            # print(targets.size())
             outputs = self.model(inps, targets)
 
         loss = outputs["total_loss"]
@@ -192,10 +195,11 @@ class Trainer:
             logger.info("--->No mosaic aug now!")
             self.train_loader.close_mosaic()
             logger.info("--->Add additional L1 loss now!")
-            if self.is_distributed:
-                self.model.module.head.use_l1 = True
-            else:
-                self.model.head.use_l1 = True
+            if 'head' in self.model.__dict__:                # zjw, head only in yolox model
+                if self.is_distributed:
+                    self.model.module.head.use_l1 = True
+                else:
+                    self.model.head.use_l1 = True
             self.exp.eval_interval = 1
             self.exp.eval_interval = self.exp.no_aug_eval_epochs    # zjw, org=1
             if not self.no_aug:
