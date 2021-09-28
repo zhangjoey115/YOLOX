@@ -61,6 +61,19 @@ class DenseNetTSR(nn.Module):
             outputs = cls_preds
         return outputs
 
+    def pre_decoding(self, preds):
+        """
+        preds = [batch_size, class_score]
+        output = [batch_size, det_num, [box, obj, score]]
+        """
+        score = F.softmax(preds, dim=1)
+        batch_size = score.shape[0]
+        obj = torch.ones(batch_size, 1, device=score.device)
+        box = torch.tensor([50, 50, 100, 100], device=score.device) # [cent_x, cent_y, wid, height]
+        boxes = box.repeat(batch_size, 1)
+        output = torch.cat([boxes, obj, score], 1).unsqueeze(1)     # output should like [batch_size, det_num, det_detail]
+        return output
+
     def decoding(self, outputs, conf_thrsh=0.0):
         score = F.softmax(outputs, dim=1)
         class_conf, class_pred = torch.max(score[:, :self.num_classes], 1, keepdim=True)

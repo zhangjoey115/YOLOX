@@ -21,14 +21,14 @@ class Exp(MyExp):
         self.eval_interval = 10
         self.basic_lr_per_img = 1.0e-3 / 24.0      # devide batch_size
         self.min_lr_ratio = 0.001
-        self.input_size = (128, 128)
-        self.test_size = (128, 128)
+        self.input_size = (100, 100)
+        self.test_size = (100, 100)
         self.multiscale_range = 0
         self.mixup_prob = 0.0       # 1.0
         self.mosaic_prob = 0.0
         self.mosaic_scale = (0.5, 2)
         # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.exp_name = "train_crop128_dense_num37_210927/tsr_2nd_dense_37_100_500_1e-3"
+        self.exp_name = "train_crop100_dense_pl15_210915/tsr_2nd_dense_16_100_500_1e-3"
 
     def get_model(self, sublinear=False):
         if "model" not in self.__dict__:
@@ -56,7 +56,7 @@ class Exp(MyExp):
         with wait_for_the_master(local_rank):
             dataset = TSR_2ND_Detection(
                 data_dir=os.path.join(get_yolox_datadir(), "tt100k_part"),
-                image_sets=[('tt100k_crop_128', 'train')],
+                image_sets=[('tt100k_crop_100_16', 'train')],
                 img_size=self.input_size,
                 preproc=TrainTransform(
                     max_labels=1,
@@ -115,7 +115,7 @@ class Exp(MyExp):
 
         valdataset = TSR_2ND_Detection(
             data_dir=os.path.join(get_yolox_datadir(), "tt100k_part"),
-            image_sets=[('tt100k_crop_128', 'test')],
+            image_sets=[('tt100k_crop_100_16', 'test')],
             img_size=self.test_size,
             preproc=ValTransform(legacy=legacy),
         )
