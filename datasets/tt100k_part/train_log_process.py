@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 # encoding: utf-8
- 
- 
+"""
+    Info:   Plot training loss pic according train_log.txt. 
+    
+    Usage:  Pay attention to loss log format, and change iter_one_ep by epoch num accordingly.
+    Author: zjw
+    Date:   2021-08-15
+"""
 import os
 import argparse
 import re
@@ -13,32 +18,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--input",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_100/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_250-350/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_350-400/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_0-600/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano_0-100_1e-6/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_tiny_100_1e-6_no_aug/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano3_30_1e-5/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano3_100_5e-5/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano3_200_2e-4/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano5_400_5e-4/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano5_400-500_1e-5/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano5_500-700_5e-6/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano5_700-1000_1e-6/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano640_45_200_1e-3/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano45t_416_0_0.1_20_1e-3/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano45t_416_0_0.5_30_1e-3/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano3_640NP_0_0.5_500_1e-3/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_nano11_416Pre_0_0.5_400_1e-3/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_tiny11_416Pre_0_0.5_500_1e-3/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/test_nano640_210906/yolox_tt100k_nano11_416NP_0_0.5_20_1e-3/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/test_nano640_210906/yolox_tt100k_nano11_416Pre_0_0.5_20_1e-3/train_log.txt",
-                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/test_nano640_210906/yolox_tt100k_nano11_640NP_newCs_0_0.5_20_1e-3/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_nt11_640_210906/yolox_tt100k_nano11_640Pre_400_1e-3/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_nt11_640_210906/yolox_tt100k_nano11_1024Pre_100_1e-3/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_nt11_640_210906/yolox_tt100k_nano11_1024Pre_100-300_5e-5/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_n_pl15_1024_210913/yolox_tt100k_nano15_1024Pre_300_1e-3/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_n_pl15_1024_210913/yolox_tt100k_nano15_1024Pre_300-600_1e-5/train_log.txt",
-                    default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_crop100_dense_pl15_210915/tsr_2nd_dense_16_100_500_1e-3/train_log.txt",
+                    # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_crop100_dense_pl15_210915/tsr_2nd_dense_16_100_500_1e-3/train_log.txt",
+                    default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_crop128_dense_num37_210927/tsr_2nd_dense_37_100_500_1e-3/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_0-300/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_0-300_r216_b8/train_log.txt",
                     # default="/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/yolox_tt100k_s_100-250/train_log.txt",
@@ -87,7 +73,7 @@ def main():
                    "total_loss_avg": list(), "iou_loss_avg": list(), "l1_loss_avg": list(), "conf_loss_avg": list(), "cls_loss_avg": list(),
                    "lr": list()}
     result_dict_ap = {"epoch_num": list(), "mAP50": list(), "mAP50_90": list()}
-    iter_one_ep = 755   # 503   # 1509  # 1006  # 755
+    iter_one_ep = 666   # 503   # 1509  # 1006  # 755
     avg_count = 10
     last_epoch, last_iter = 0.0, 0
     with open(file_name, 'r') as f:

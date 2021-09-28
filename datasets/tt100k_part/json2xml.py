@@ -1,3 +1,10 @@
+"""
+    Info:   Generate xml label files from json file. 
+    
+    Usage:  used to process TT100K dataset
+    Author: zjw
+    Date:   2021-08-05
+"""
 import os
 import subprocess
 import json

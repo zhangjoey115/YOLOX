@@ -1,6 +1,9 @@
 """
-Chose selected pics by anno type
-    example: chose pic contain pl90 
+    Info:   Chose selected pics by anno type. 
+    
+    Usage:  FILTER_PIC_FILES:   chose pic like contain pl90.
+    Author: zjw
+    Date:   2021-09-15
 """
 import os
 import subprocess

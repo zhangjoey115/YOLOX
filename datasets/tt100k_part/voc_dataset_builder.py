@@ -1,3 +1,12 @@
+"""
+    Info:   Build and analyse VOC format dataset. 
+    
+    Usage:  BUILD_DATASET:      generate VOC format dataset by jpg&xml files
+            ANALYSE_DATASET:    count class nums
+            CHANGE_ANNOTATION:  change anno type to chossen sub-types, ex. all ph3.0/ph4.5/... label to ph label
+    Author: zjw
+    Date:   2021-09-15
+"""
 import os
 import subprocess
 import re
@@ -121,10 +130,20 @@ def divide_anno_classes(name, cls_cnt, cls_cnt_sub):
     # class_div = {'i': ['il', 'ip', 'i_other'],
     #              'p': ['pm', 'pa', 'pl', 'pr', 'ph', 'pw', 'p_other'],
     #              'w': ['w']}
-    class_div = {'i': ['other'],                          # only pl
+    # class_div = {'i': ['other'],                          # only pl
+    #              'pl': ['pl5', 'pl15', 'pl20', 'pl25', 'pl30', 'pl40', 'pl50', 'pl60', 'pl70', 'pl80', 'pl90', 'pl100', 'pl110', 'pl120', 'pl_other'],
+    #              'p': ['other'],
+    #              'w': ['other']}
+    class_div = {'il': ['il60', 'il80', 'il90', 'il100', 'il_other'],  # p nums = pl + ph + pw
+                 'i': ['i_other'],
                  'pl': ['pl5', 'pl15', 'pl20', 'pl25', 'pl30', 'pl40', 'pl50', 'pl60', 'pl70', 'pl80', 'pl90', 'pl100', 'pl110', 'pl120', 'pl_other'],
-                 'p': ['other'],
-                 'w': ['other']}
+                 'pr': ['pr40', 'pr50', 'pr60', 'pr_other'],
+                 'ph': ['ph4', 'ph4.5', 'ph5', 'ph_other'],
+                 'pw': ['pw_other'],
+                 'pm': ['pm20', 'pm30', 'pm55', 'pm_other'],
+                 'pa': ['pa_other'],
+                 'p': ['p_other'],
+                 'w': ['w_other']}
     is_full_match = True
 
     def divide_sub_anno(name, class_list, full_match=False):
@@ -188,7 +207,12 @@ def change_annotation(anno_dir, anno_dir_new=None):
                     f.write(line)
     # print('Finish Anno Change! Class count i = {}, p = {}, w = {}.'.format(cls_cnt['i'], cls_cnt['p'], cls_cnt['w']))
     print(cls_cnt)
-    print(cls_cnt_sub)
+    # print(cls_cnt_sub)
+    class_dict_sort_k = sorted(cls_cnt_sub.items(), key=lambda item: item[0], reverse=False)
+    print(class_dict_sort_k)
+    # [print(x[0]) for x in class_dict_sort_k]
+    for x in class_dict_sort_k:
+        print('\t\"{}\",'.format(x[0]))
 
 
 if __name__ == "__main__":
@@ -206,12 +230,12 @@ if __name__ == "__main__":
         # anno_dir_test = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/xmlLabel/test/"
         # id_file_name_test = "tt100k2021/ImageSets/Main/test.txt"
 
-        dataset_name = "tt100k_crop_100_16"     # "tt100k2021"
-        dataset_dir_train = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/train/"
-        anno_dir_train = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/anno_train/"
+        dataset_name = "tt100k_crop_128"     # "tt100k2021"
+        dataset_dir_train = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop_128/train/"
+        anno_dir_train = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop_128/anno_train/"
         id_file_name_train = dataset_name + "/ImageSets/Main/train.txt"
-        dataset_dir_test = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/test/"
-        anno_dir_test = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/anno_test/"
+        dataset_dir_test = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop_128/test/"
+        anno_dir_test = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop_128/anno_test/"
         id_file_name_test = dataset_name + "/ImageSets/Main/test.txt"
 
         subprocess.call("rm -rf " + dataset_name,  shell=True)
@@ -233,14 +257,14 @@ if __name__ == "__main__":
         print("Train Summary:")
         anno_dir = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/xmlLabel/train/"
         analyse_dataset(anno_dir)
-        print("Test Summary:")
-        anno_dir = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/xmlLabel/test/"
-        analyse_dataset(anno_dir)
+        # print("Test Summary:")
+        # anno_dir = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/xmlLabel/test/"
+        # analyse_dataset(anno_dir)
 
     elif option == 'CHANGE_ANNOTATION':
         print("Change Annotation to 3 classed: i/p/w")
-        anno_dir = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021/Annotations_org/"
-        anno_dir_new = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021/Annotations_pl/"
-        # anno_dir = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k_crop_100_16/Annotations_org/"
-        # anno_dir_new = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k_crop_100_16/Annotations_pl/"
+        # anno_dir = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021/Annotations_org/"
+        # anno_dir_new = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021/Annotations_pl/"
+        anno_dir = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k_crop_128/Annotations_org/"
+        anno_dir_new = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k_crop_128/Annotations_num/"
         change_annotation(anno_dir, anno_dir_new)

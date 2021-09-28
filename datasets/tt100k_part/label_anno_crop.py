@@ -1,3 +1,11 @@
+"""
+    Info:   Generate label xml file by pic name. 
+    
+    Usage:  process 38741_2_ph3.2.jpg, generate label file with class name = ph3.2
+            Shall be used after script label_img_crop.py
+    Author: zjw
+    Date:   2021-09-10
+"""
 import os
 import re
 import json
@@ -75,10 +83,10 @@ def get_img_dir_anno(dir):
 
 
 if __name__ == "__main__":
-    # img_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/train/'
-    # anno_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/anno_train/'
-    img_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/test/'
-    anno_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop/anno_test/'
+    img_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop_128/train/'
+    anno_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop_128/anno_train/'
+    # img_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop_128/test/'
+    # anno_dir = '/home/zjw/workspace/DL_Vision/TSR/YOLOX/datasets/tt100k_part/tt100k2021_crop_128/anno_test/'
     os.makedirs(anno_dir, exist_ok=True)
 
     file_names, type_names = get_img_dir_anno(img_dir)
