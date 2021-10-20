@@ -58,7 +58,7 @@ class DenseNetTSR(nn.Module):
             # gt_cls_per_image = F.one_hot(gt_classes.to(torch.int64), self.num_classes)
             # pair_wise_cls_loss = F.binary_cross_entropy()
         else:
-            outputs = cls_preds
+            outputs = self.decoding(cls_preds)
         return outputs
 
     def pre_decoding(self, preds):
