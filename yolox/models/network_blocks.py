@@ -184,27 +184,41 @@ class CSPLayer(nn.Module):
         x = torch.cat((x_1, x_2), dim=1)
         return self.conv3(x)
 
+# class Focus(nn.Module):
+#     """Focus width and height information into channel space."""
+#
+#     def __init__(self, in_channels, out_channels, ksize=1, stride=1, act="silu"):
+#         super().__init__()
+#         self.conv = BaseConv(in_channels * 4, out_channels, ksize, stride, act=act)
+#
+#     def forward(self, x):
+#         # shape of x (b,c,w,h) -> y(b,4c,w/2,h/2)
+#         patch_top_left = x[..., ::2, ::2]
+#         patch_top_right = x[..., ::2, 1::2]
+#         patch_bot_left = x[..., 1::2, ::2]
+#         patch_bot_right = x[..., 1::2, 1::2]
+#         x = torch.cat(
+#             (
+#                 patch_top_left,
+#                 patch_bot_left,
+#                 patch_top_right,
+#                 patch_bot_right,
+#             ),
+#             dim=1,
+#         )
+#         return self.conv(x)
 
 class Focus(nn.Module):
     """Focus width and height information into channel space."""
 
     def __init__(self, in_channels, out_channels, ksize=1, stride=1, act="silu"):
         super().__init__()
-        self.conv = BaseConv(in_channels * 4, out_channels, ksize, stride, act=act)
+        self.conv1 = nn.Conv2d(in_channels, out_channels//2, 3, 2, 1)
+        self.conv2 = nn.Conv2d(out_channels//2, out_channels, 3, 1, 1)
+        # self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
     def forward(self, x):
-        # shape of x (b,c,w,h) -> y(b,4c,w/2,h/2)
-        patch_top_left = x[..., ::2, ::2]
-        patch_top_right = x[..., ::2, 1::2]
-        patch_bot_left = x[..., 1::2, ::2]
-        patch_bot_right = x[..., 1::2, 1::2]
-        x = torch.cat(
-            (
-                patch_top_left,
-                patch_bot_left,
-                patch_top_right,
-                patch_bot_right,
-            ),
-            dim=1,
-        )
-        return self.conv(x)
+        x = self.conv1(x)
+        x = self.conv2(x)
+        # x = self.pool1(x)
+        return x
