@@ -148,19 +148,25 @@ def _mirror(image, boxes, prob=0.5):
     return image, boxes
 
 
-def preproc(img, input_size, swap=(2, 0, 1)):
+def preproc(img, input_size, mean=None, std=None, swap=(2, 0, 1)):
     if len(img.shape) == 3:
-        padded_img = np.ones((input_size[0], input_size[1], 3), dtype=np.uint8) * 114
+        padded_img = np.ones((input_size[0], input_size[1], 3), dtype=np.float32) * 114
     else:
-        padded_img = np.ones(input_size, dtype=np.uint8) * 114
+        padded_img = np.ones(input_size, dtype=np.float32) * 114
 
     r = min(input_size[0] / img.shape[0], input_size[1] / img.shape[1])
     resized_img = cv2.resize(
         img,
         (int(img.shape[1] * r), int(img.shape[0] * r)),
         interpolation=cv2.INTER_LINEAR,
-    ).astype(np.uint8)
+    ).astype(np.float32)
     padded_img[: int(img.shape[0] * r), : int(img.shape[1] * r)] = resized_img
+
+    # zjw: normalize
+    if mean is not None and std is not None:
+        padded_img /= 255.0
+        padded_img -= mean
+        padded_img /= std
 
     padded_img = padded_img.transpose(swap)
     padded_img = np.ascontiguousarray(padded_img, dtype=np.float32)
@@ -168,17 +174,19 @@ def preproc(img, input_size, swap=(2, 0, 1)):
 
 
 class TrainTransform:
-    def __init__(self, max_labels=50, flip_prob=0.5, hsv_prob=1.0):
+    def __init__(self, max_labels=50, flip_prob=0.5, hsv_prob=1.0, bgr_means=None, std=None):
         self.max_labels = max_labels
         self.flip_prob = flip_prob
         self.hsv_prob = hsv_prob
+        self.means = bgr_means
+        self.std = std
 
     def __call__(self, image, targets, input_dim):
         boxes = targets[:, :4].copy()
         labels = targets[:, 4].copy()
         if len(boxes) == 0:
             targets = np.zeros((self.max_labels, 5), dtype=np.float32)
-            image, r_o = preproc(image, input_dim)
+            image, r_o = preproc(image, input_dim, self.means, self.std)
             return image, targets
 
         image_o = image.copy()
@@ -193,7 +201,7 @@ class TrainTransform:
             augment_hsv(image)
         image_t, boxes = _mirror(image, boxes, self.flip_prob)
         height, width, _ = image_t.shape
-        image_t, r_ = preproc(image_t, input_dim)
+        image_t, r_ = preproc(image_t, input_dim, self.means, self.std)
         # boxes [xyxy] 2 [cx,cy,w,h]
         boxes = xyxy2cxcywh(boxes)
         boxes *= r_
@@ -203,7 +211,7 @@ class TrainTransform:
         labels_t = labels[mask_b]
 
         if len(boxes_t) == 0:
-            image_t, r_o = preproc(image_o, input_dim)
+            image_t, r_o = preproc(image_o, input_dim, self.means, self.std)
             boxes_o *= r_o
             boxes_t = boxes_o
             labels_t = labels_o
@@ -237,16 +245,26 @@ class ValTransform:
         data
     """
 
-    def __init__(self, swap=(2, 0, 1), legacy=False):
+    # def __init__(self, swap=(2, 0, 1), legacy=False):
+    #     self.swap = swap
+    #     self.legacy = legacy
+
+    # # assume input is cv2 img for now
+    # def __call__(self, img, res, input_size):
+    #     img, _ = preproc(img, input_size, self.swap)
+    #     if self.legacy:
+    #         img = img[::-1, :, :].copy()
+    #         img /= 255.0
+    #         img -= np.array([0.485, 0.456, 0.406]).reshape(3, 1, 1)
+    #         img /= np.array([0.229, 0.224, 0.225]).reshape(3, 1, 1)
+    #     return img, np.zeros((1, 5))
+
+    def __init__(self, bgr_means=None, std=None, swap=(2, 0, 1)):
+        self.means = bgr_means
         self.swap = swap
-        self.legacy = legacy
+        self.std = std
 
     # assume input is cv2 img for now
     def __call__(self, img, res, input_size):
-        img, _ = preproc(img, input_size, self.swap)
-        if self.legacy:
-            img = img[::-1, :, :].copy()
-            img /= 255.0
-            img -= np.array([0.485, 0.456, 0.406]).reshape(3, 1, 1)
-            img /= np.array([0.229, 0.224, 0.225]).reshape(3, 1, 1)
+        img, _ = preproc(img, input_size, self.means, self.std, self.swap)
         return img, np.zeros((1, 5))

@@ -118,7 +118,8 @@ class Predictor(object):
         self.nmsthre = exp.nmsthre
         self.test_size = exp.test_size
         self.device = device
-        self.preproc = ValTransform(legacy=legacy)
+        self.preproc = ValTransform(bgr_means=(0.406, 0.456, 0.485),
+                                    std=(0.225, 0.224, 0.229))
         if trt_file is not None:
             from torch2trt import TRTModule
 

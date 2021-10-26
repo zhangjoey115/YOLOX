@@ -4,9 +4,9 @@
 
 # TT100K_CLASSES = ( '__background__",# always index 0
 TSR_ZO_CLASSES = (
-	"il",
-	"ph",
 	"pl",
+	"il",
 	"pr",
+	"ph",
 	"other"
 )

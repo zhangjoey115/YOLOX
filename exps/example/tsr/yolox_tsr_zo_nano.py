@@ -18,18 +18,20 @@ class Exp(MyExp):
         self.width = 0.25
         self.warmup_epochs = 1
         self.max_epoch = 300
-        self.no_aug_epochs = 50
-        self.no_aug_eval_epochs = 5
+        self.no_aug_epochs = 5
+        self.no_aug_eval_epochs = 50
         self.eval_interval = 5
-        self.basic_lr_per_img = 1.0e-3 / 16.0      # devide batch_size
-        self.min_lr_ratio = 0.005
-        self.input_size = (448, 768)
-        self.test_size = (448, 768)
+        self.basic_lr_per_img = 1.0e-4 / 16.0      # devide batch_size
+        self.min_lr_ratio = 0.05
+        # self.input_size = (448, 768)
+        # self.input_size = (256, 768)
+        self.input_size = (320, 960)
+        self.test_size = (256, 768)
         # self.multiscale_range = 0
         self.mixup_prob = 0.0       # 1.0
         self.mosaic_scale = (0.5, 2)
         # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.exp_name = "train_tsr_zo_768_211019/yolox_tsr_zo_nano5_768_300_1e-3"
+        self.exp_name = "train_tsr_zo_768_211019/yolox_tsr_zo_nano5_320norm_p_om_300_1e-4"
 
     def get_model(self, sublinear=False):
 
@@ -74,7 +76,9 @@ class Exp(MyExp):
                 preproc=TrainTransform(
                     max_labels=50,
                     flip_prob=self.flip_prob,
-                    hsv_prob=self.hsv_prob),
+                    hsv_prob=self.hsv_prob,
+                    bgr_means=(0.406, 0.456, 0.485),
+                    std=(0.225, 0.224, 0.229)),
                 cache=cache_img,
             )
 
@@ -85,7 +89,9 @@ class Exp(MyExp):
             preproc=TrainTransform(
                 max_labels=120,
                 flip_prob=self.flip_prob,
-                hsv_prob=self.hsv_prob),
+                hsv_prob=self.hsv_prob,
+                bgr_means=(0.406, 0.456, 0.485),
+                std=(0.225, 0.224, 0.229)),
             degrees=self.degrees,
             translate=self.translate,
             mosaic_scale=self.mosaic_scale,
@@ -130,7 +136,9 @@ class Exp(MyExp):
             data_dir=os.path.join(get_yolox_datadir(), "zone_tsr"),
             image_sets=[('zone_tsr_generate01', 'test')],
             img_size=self.test_size,
-            preproc=ValTransform(legacy=legacy),
+            preproc=ValTransform(
+                bgr_means=(0.406, 0.456, 0.485),
+                std=(0.225, 0.224, 0.229)),
         )
 
         if is_distributed:
