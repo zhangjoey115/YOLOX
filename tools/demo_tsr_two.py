@@ -8,11 +8,13 @@ import time
 from loguru import logger
 
 import cv2
+import numpy as np
 
 import torch
 
 from yolox.data.data_augment import ValTransform
 from yolox.data.datasets import COCO_CLASSES
+# from yolox.data.datasets import TT100K_CLASSES as COCO_CLASSES      # zjw
 from yolox.data.datasets import TSR_2ND_CLASSES as COCO_CLASSES      # zjw
 from yolox.exp import get_exp
 from yolox.utils import fuse_model, get_model_info, postprocess, vis
@@ -101,7 +103,7 @@ def get_image_list(path):
 class Predictor(object):
     def __init__(
         self,
-        model,
+        model_list,
         exp,
         cls_names=COCO_CLASSES,
         trt_file=None,
@@ -109,7 +111,7 @@ class Predictor(object):
         device="cpu",
         legacy=False,
     ):
-        self.model = model
+        self.model_list = model_list
         self.cls_names = cls_names
         self.decoder = decoder
         self.num_classes = exp.num_classes
@@ -117,7 +119,6 @@ class Predictor(object):
         self.nmsthre = exp.nmsthre
         self.test_size = exp.test_size
         self.device = device
-        # self.preproc = ValTransform(legacy=legacy)
         self.preproc = ValTransform(bgr_means=(0.406, 0.456, 0.485),
                                     std=(0.225, 0.224, 0.229))
         if trt_file is not None:
@@ -137,6 +138,7 @@ class Predictor(object):
             img = cv2.imread(img)
         else:
             img_info["file_name"] = None
+        logger.info("Processing image: {}".format(img_info["file_name"]))
 
         height, width = img.shape[:2]
         img_info["height"] = height
@@ -152,16 +154,34 @@ class Predictor(object):
             img = img.cuda()
 
         with torch.no_grad():
+            # 1st stage tsr model
             t0 = time.time()
-            outputs = self.model(img)
-            outputs = self.model.pre_decoding(outputs)      # zjw
+            output_1st = self.model_list[0](img)
+            logger.info("Infer time1: {:.4f}s".format(time.time() - t0))
             if self.decoder is not None:
-                outputs = self.decoder(outputs, dtype=outputs.type())
-            outputs = postprocess(
-                outputs, self.num_classes, self.confthre,
+                output_1st = self.decoder(output_1st, dtype=outputs.type())
+            output_1st = postprocess(
+                output_1st, self.num_classes, self.confthre,
                 self.nmsthre, class_agnostic=True
             )
-            logger.info("Infer time: {:.4f}s".format(time.time() - t0))
+            # logger.info("output_1st len = {}, type={}".format(len(output_1st), output_1st[0]))
+            if output_1st[0] is None:
+                return output_1st, img_info
+
+            # 2nd stage tsr model
+            input_2nd = process_1st_output(output_1st, img_info["raw_img"], img_info["ratio"], self.preproc)
+            t0 = time.time()
+            outputs_2nd = self.model_list[1](input_2nd)
+            logger.info("Infer time2: {:.4f}s".format(time.time() - t0))
+            outputs_2nd = self.model_list[1].decoding(outputs_2nd)      # zjw
+            if self.decoder is not None:
+                outputs_2nd = self.decoder(outputs_2nd, dtype=outputs_2nd.type())
+            # outputs_2nd = postprocess(
+            #     outputs_2nd, self.num_classes, self.confthre,
+            #     self.nmsthre, class_agnostic=True
+            # )
+            outputs = process_result_combination(output_1st, outputs_2nd)
+
         return outputs, img_info
 
     def visual(self, output, img_info, cls_conf=0.35):
@@ -236,7 +256,48 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
             break
 
 
-def main(exp, args):
+def process_1st_output(output_1st, img, ratio, preproc=None):
+    """ 
+    output_1st: [tensor(n,7)] : bbox, obj_conf, class_conf, class_pred
+    input_2nd:  (10, 3, 128, 128)
+    """
+    max_batch_num = 100
+    num = output_1st[0].shape[0]
+    boxes = output_1st[0][:, :4].cpu().numpy() / ratio
+    boxes = boxes.astype(np.int32)
+    input_2nd = []
+    for i in range(max_batch_num):
+        if i < num:
+            box = [max(x,0) for x in boxes[i, :]]
+            img_crop = img[box[1]:box[3], box[0]:box[2]]
+            img_resize = cv2.resize(img_crop, (128, 128))
+            # cv2.imshow('demo', img_resize)
+            # input_2nd.append(img_resize.transpose((2,0,1)))
+            img_resize, _ = preproc(img_resize, None, (128, 128))
+            input_2nd.append(img_resize)
+        else:
+            input_2nd.append(input_2nd[-1])
+    input_2nd = [torch.from_numpy(x) for x in input_2nd]
+    input_2nd = torch.stack(input_2nd, 0)
+    input_2nd = input_2nd.to(device=output_1st[0].device, dtype=output_1st[0].dtype)
+    return input_2nd
+
+
+def process_result_combination(output_1st, outputs_2nd):
+    """ 
+    output_1st: [tensor(n,7)] : bbox, obj_conf, class_conf, class_pred
+    input_2nd:  tensor(10, 2): score, class
+    output: 
+    """
+    output = output_1st
+    num = output_1st[0].shape[0]
+    for i in range(num):
+        output[0][i, 5] = outputs_2nd[i, 0]
+        output[0][i, 6] = outputs_2nd[i, 1]
+    return output
+
+
+def model_fetcher(exp, args):
     if not args.experiment_name:
         args.experiment_name = exp.exp_name
 
@@ -281,22 +342,26 @@ def main(exp, args):
     if args.fuse:
         logger.info("\tFusing model...")
         model = fuse_model(model)
+    return model
 
-    if args.trt:
-        assert not args.fuse, "TensorRT model is not support model fusing!"
-        trt_file = os.path.join(file_name, "model_trt.pth")
-        assert os.path.exists(
-            trt_file
-        ), "TensorRT model is not found!\n Run python3 tools/trt.py first!"
-        model.head.decode_in_inference = False
-        decoder = model.head.decode_outputs
-        logger.info("Using TensorRT to inference")
-    else:
-        trt_file = None
-        decoder = None
 
-    predictor = Predictor(model, exp, COCO_CLASSES, trt_file, decoder, args.device, args.legacy)
+def main(model_list, exp_1, args):
+    # if args.trt:
+    #     assert not args.fuse, "TensorRT model is not support model fusing!"
+    #     trt_file = os.path.join(file_name, "model_trt.pth")
+    #     assert os.path.exists(
+    #         trt_file
+    #     ), "TensorRT model is not found!\n Run python3 tools/trt.py first!"
+    #     model.head.decode_in_inference = False
+    #     decoder = model.head.decode_outputs
+    #     logger.info("Using TensorRT to inference")
+    # else:
+    trt_file = None
+    decoder = None
+
+    predictor = Predictor(model_list, exp_1, COCO_CLASSES, trt_file, decoder, args.device, args.legacy)
     current_time = time.localtime()
+    vis_folder = os.path.join(os.path.join(exp_1.output_dir, exp_1.exp_name), 'vis_res')
     if args.demo == "image":
         image_demo(predictor, vis_folder, args.path, current_time, args.save_result)
     elif args.demo == "video" or args.demo == "webcam":
@@ -305,6 +370,19 @@ def main(exp, args):
 
 if __name__ == "__main__":
     args = make_parser().parse_args()
-    exp = get_exp(args.exp_file, args.name)
+    exp_file_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/exps/example/tsr/yolox_tsr_zo_nano.py"
+    exp_file_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/exps/example/tsr/tsr_2nd_exp_dense.py"
+    # checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_768_211019/yolox_tsr_zo_nano5_320norm_p_om_300_1e-4/best_ckpt.pth"
+    checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211111/yolox_tsr_zo_head2_320norm_p_om_300_1e-3_0p005/best_ckpt.pth"
+    # checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211111/tsr_v01v02_dense16L1_67_400_1e-3_0p005/best_ckpt.pth"
+    checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211111/tsr_v01v02_dense32_67_600_1e-3_0p005/best_ckpt.pth"
+    exp_1 = get_exp(exp_file_1, args.name)
+    exp_2 = get_exp(exp_file_2, args.name)
 
-    main(exp, args)
+    model_list = []
+    args.ckpt = checkpoint_1
+    model_list.append(model_fetcher(exp_1, args))
+    args.ckpt = checkpoint_2
+    model_list.append(model_fetcher(exp_2, args))
+
+    main(model_list, exp_1, args)

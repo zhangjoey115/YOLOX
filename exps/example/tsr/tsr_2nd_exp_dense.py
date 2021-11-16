@@ -15,12 +15,12 @@ class Exp(MyExp):
         super(Exp, self).__init__()
         self.num_classes = len(TSR_2ND_CLASSES)      # 3    # 45
         self.warmup_epochs = 1
-        self.max_epoch = 500
+        self.max_epoch = 400
         self.no_aug_epochs = 50
         self.no_aug_eval_epochs = 5
         self.eval_interval = 10
-        self.basic_lr_per_img = 1.0e-3 / 24.0      # devide batch_size
-        self.min_lr_ratio = 0.001
+        self.basic_lr_per_img = 1.0e-3 / 32.0      # devide batch_size
+        self.min_lr_ratio = 0.005
         self.input_size = (128, 128)
         self.test_size = (128, 128)
         self.multiscale_range = 0
@@ -28,12 +28,13 @@ class Exp(MyExp):
         self.mosaic_prob = 0.0
         self.mosaic_scale = (0.5, 2)
         # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.exp_name = "train_crop128_dense_num37_210927/tsr_2nd_dense_37_100_500_1e-3"
+        self.exp_name = "train_tsr_2nd_128_211111/tsr_v01v02_dense16L1_67_400_1e-3_0p005"
 
     def get_model(self, sublinear=False):
         if "model" not in self.__dict__:
             from yolox.models import DenseNetTSR
-            self.model = DenseNetTSR(block_config=(4,), num_init_features=32, num_classes=self.num_classes)
+            # self.model = DenseNetTSR(growth_rate=16, block_config=(4,), num_init_features=16, num_classes=self.num_classes)
+            self.model = DenseNetTSR(growth_rate=32, block_config=(4,), num_init_features=32, num_classes=self.num_classes)
 
         return self.model
 
@@ -55,13 +56,18 @@ class Exp(MyExp):
 
         with wait_for_the_master(local_rank):
             dataset = TSR_2ND_Detection(
-                data_dir=os.path.join(get_yolox_datadir(), "tt100k_part"),
-                image_sets=[('tt100k_crop_128', 'train')],
+                data_dir=os.path.join(get_yolox_datadir(), "zone_tsr"),
+                image_sets=[('zone_tsr_v01v02_20211110_crop_128_8k', 'train'),
+                            # ('zone_tsr_v01_20211028_crop_128_1k6', 'train'),
+                            ('zone_tsr_tt100k_crop_128_none_500', 'train'),
+                            ('zone_tsr_tt100k_crop_128_plr', 'train')],
                 img_size=self.input_size,
                 preproc=TrainTransform(
                     max_labels=1,
                     flip_prob=self.flip_prob,
-                    hsv_prob=self.hsv_prob),
+                    hsv_prob=self.hsv_prob,
+                    bgr_means=(0.406, 0.456, 0.485),
+                    std=(0.225, 0.224, 0.229)),
                 cache=cache_img,
             )
 
@@ -72,7 +78,9 @@ class Exp(MyExp):
             preproc=TrainTransform(
                 max_labels=1,
                 flip_prob=self.flip_prob,
-                hsv_prob=self.hsv_prob),
+                hsv_prob=self.hsv_prob,
+                bgr_means=(0.406, 0.456, 0.485),
+                std=(0.225, 0.224, 0.229)),
             degrees=self.degrees,
             translate=self.translate,
             mosaic_scale=self.mosaic_scale,
@@ -114,10 +122,15 @@ class Exp(MyExp):
         from yolox.data import TSR_2ND_Detection, ValTransform
 
         valdataset = TSR_2ND_Detection(
-            data_dir=os.path.join(get_yolox_datadir(), "tt100k_part"),
-            image_sets=[('tt100k_crop_128', 'test')],
+            data_dir=os.path.join(get_yolox_datadir(), "zone_tsr"),
+            # image_sets=[('zone_tsr_20211028_crop_128_1k6', 'test'),
+            #             ('zone_tsr_tt100k_crop_128_none_500', 'test')],
+            image_sets=[('zone_tsr_v01v02_20211110_crop_128_8k', 'test')],
+            # image_sets=[('zone_tsr_tt100k_crop_128_none_500', 'test')],
             img_size=self.test_size,
-            preproc=ValTransform(legacy=legacy),
+            preproc=ValTransform(
+                bgr_means=(0.406, 0.456, 0.485),
+                std=(0.225, 0.224, 0.229)),
         )
 
         if is_distributed:

@@ -20,14 +20,14 @@ def parse_rec(filename):
         obj_struct = {}
         obj_struct["name"] = obj.find("name").text
         obj_struct["pose"] = obj.find("pose").text
-        obj_struct["truncated"] = int(obj.find("truncated").text)
+        # obj_struct["truncated"] = int(obj.find("truncated").text)
         obj_struct["difficult"] = int(obj.find("difficult").text)
         bbox = obj.find("bndbox")
         obj_struct["bbox"] = [
-            int(bbox.find("xmin").text),
-            int(bbox.find("ymin").text),
-            int(bbox.find("xmax").text),
-            int(bbox.find("ymax").text),
+            int(float(bbox.find("xmin").text)),
+            int(float(bbox.find("ymin").text)),
+            int(float(bbox.find("xmax").text)),
+            int(float(bbox.find("ymax").text)),
         ]
         objects.append(obj_struct)
 
@@ -118,7 +118,7 @@ def voc_eval(
     with open(detfile, "r") as f:
         lines = f.readlines()
 
-    if len(lines) == 0:
+    if len(lines) == 0 or npos == 0:    # zjw: bug fix for divide zero(eval = nan)
         return 0, 0, 0
 
     splitlines = [x.strip().split(" ") for x in lines]
@@ -181,5 +181,11 @@ def voc_eval(
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
     ap = voc_ap(rec, prec, use_07_metric)
+    # if npos != 0:
+    # else:
+    #     print("fp = {}, tp = {}".format(fp, tp))
+    #     rec = 0
+    #     prec = 0
+    #     ap = 0
 
     return rec, prec, ap

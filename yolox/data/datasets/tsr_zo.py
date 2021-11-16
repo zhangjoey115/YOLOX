@@ -64,7 +64,7 @@ class AnnotationTransform(object):
             pts = ["xmin", "ymin", "xmax", "ymax"]
             bndbox = []
             for i, pt in enumerate(pts):
-                cur_pt = int(bbox.find(pt).text) - 1
+                cur_pt = int(float(bbox.find(pt).text)) - 1
                 # scale height or width
                 # cur_pt = cur_pt / width if i % 2 == 0 else cur_pt / height
                 bndbox.append(cur_pt)
@@ -80,6 +80,10 @@ class AnnotationTransform(object):
 
         width = int(target.find("size").find("width").text)
         height = int(target.find("size").find("height").text)
+        if width == 0:          # zjw
+            width = 1920
+        if height == 0:
+            height = 1080
         img_info = (height, width)
 
         return res, img_info

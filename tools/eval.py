@@ -156,7 +156,10 @@ def main(exp, args, num_gpu):
         logger.info("loading checkpoint from {}".format(ckpt_file))
         loc = "cuda:{}".format(rank)
         ckpt = torch.load(ckpt_file, map_location=loc)
-        model.load_state_dict(ckpt["model"])
+        if 'model' in ckpt:
+            model.load_state_dict(ckpt["model"])
+        else:
+            model.load_state_dict(ckpt)
         logger.info("loaded checkpoint done.")
 
     if is_distributed:
