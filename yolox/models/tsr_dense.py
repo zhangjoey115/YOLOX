@@ -34,8 +34,10 @@ class DenseNetTSR(nn.Module):
     ) -> None:
         super().__init__()
         self.num_classes = num_classes
-        self.model = DenseNet(block_config=(4,), num_init_features=32, num_classes=self.num_classes)
+        # self.model = DenseNet(block_config=(4,), num_init_features=32, num_classes=self.num_classes)
+        self.model = DenseNet(growth_rate=growth_rate, block_config=block_config, num_init_features=num_init_features, num_classes=self.num_classes)
         self.loss_fn = nn.CrossEntropyLoss()
+        print("num_init_features = {}".format(num_init_features))
 
     def forward(self, x: Tensor, targets=None) -> Tensor:
         cls_preds = self.model(x)
@@ -58,24 +60,26 @@ class DenseNetTSR(nn.Module):
             # gt_cls_per_image = F.one_hot(gt_classes.to(torch.int64), self.num_classes)
             # pair_wise_cls_loss = F.binary_cross_entropy()
         else:
-            outputs = self.decoding(cls_preds)
+            outputs = F.softmax(cls_preds, dim=1)
+            # outputs = cls_preds                     # demo
+            # outputs = self.decoding(outputs)    # eval
         return outputs
 
-    def pre_decoding(self, preds):
+    def pre_decoding(self, score):
         """
         preds = [batch_size, class_score]
         output = [batch_size, det_num, [box, obj, score]]
         """
-        score = F.softmax(preds, dim=1)
+        # score = F.softmax(preds, dim=1)
         batch_size = score.shape[0]
         obj = torch.ones(batch_size, 1, device=score.device)
-        box = torch.tensor([50, 50, 100, 100], device=score.device) # [cent_x, cent_y, wid, height]
+        box = torch.tensor([64, 64, 128, 128], device=score.device) # [cent_x, cent_y, wid, height]
         boxes = box.repeat(batch_size, 1)
         output = torch.cat([boxes, obj, score], 1).unsqueeze(1)     # output should like [batch_size, det_num, det_detail]
         return output
 
-    def decoding(self, outputs, conf_thrsh=0.0):
-        score = F.softmax(outputs, dim=1)
+    def decoding(self, score, conf_thrsh=0.0):
+        # score = F.softmax(outputs, dim=1)
         class_conf, class_pred = torch.max(score[:, :self.num_classes], 1, keepdim=True)
         mask = (class_conf > conf_thrsh).squeeze()
         cls_out = torch.cat((class_conf, class_pred.float()), 1)
