@@ -15,20 +15,21 @@ class Exp(MyExp):
         super(Exp, self).__init__()
         self.num_classes = len(TSR_2ND_CLASSES)      # 3    # 45
         self.warmup_epochs = 1
-        self.max_epoch = 400
+        self.max_epoch = 500
         self.no_aug_epochs = 50
         self.no_aug_eval_epochs = 5
         self.eval_interval = 10
-        self.basic_lr_per_img = 1.0e-3 / 32.0      # devide batch_size
-        self.min_lr_ratio = 0.005
+        self.basic_lr_per_img = 1.0e-3 / 64.0      # devide batch_size
+        self.min_lr_ratio = 0.001
         self.input_size = (128, 128)
         self.test_size = (128, 128)
         self.multiscale_range = 0
         self.mixup_prob = 0.0       # 1.0
         self.mosaic_prob = 0.0
         self.mosaic_scale = (0.5, 2)
+        self.flip_prob = 0.0
         # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        self.exp_name = "train_tsr_2nd_128_211111/tsr_v01v02_dense16L1_67_400_1e-3_0p005"
+        self.exp_name = "train_tsr_2nd_128_211117/tsr_v3_20k_dense32_46_500p_1e-3_0p001"
 
     def get_model(self, sublinear=False):
         if "model" not in self.__dict__:
@@ -57,7 +58,7 @@ class Exp(MyExp):
         with wait_for_the_master(local_rank):
             dataset = TSR_2ND_Detection(
                 data_dir=os.path.join(get_yolox_datadir(), "zone_tsr"),
-                image_sets=[('zone_tsr_v01v02_20211110_crop_128_8k', 'train'),
+                image_sets=[('zone_tsr_v3_20211111_20k_crop_128', 'train'),
                             # ('zone_tsr_v01_20211028_crop_128_1k6', 'train'),
                             ('zone_tsr_tt100k_crop_128_none_500', 'train'),
                             ('zone_tsr_tt100k_crop_128_plr', 'train')],
@@ -125,7 +126,7 @@ class Exp(MyExp):
             data_dir=os.path.join(get_yolox_datadir(), "zone_tsr"),
             # image_sets=[('zone_tsr_20211028_crop_128_1k6', 'test'),
             #             ('zone_tsr_tt100k_crop_128_none_500', 'test')],
-            image_sets=[('zone_tsr_v01v02_20211110_crop_128_8k', 'test')],
+            image_sets=[('zone_tsr_v3_20211111_20k_crop_128', 'test')],
             # image_sets=[('zone_tsr_tt100k_crop_128_none_500', 'test')],
             img_size=self.test_size,
             preproc=ValTransform(

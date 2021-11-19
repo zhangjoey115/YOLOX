@@ -3,7 +3,7 @@
 # Copyright (c) Megvii, Inc. and its affiliates.
 
 # TT100K_CLASSES = ( '__background__",# always index 0
-TSR_2ND_CLASSES = (
+TSR_ZO_CLASSES_45 = (
 	"pl5",
 	"pl15",
 	"pl20",
@@ -49,5 +49,5 @@ TSR_2ND_CLASSES = (
 	"i3",
 	"i4",
 	"io",
-	"none"
+	"__background__"
 )

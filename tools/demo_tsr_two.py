@@ -369,13 +369,18 @@ def main(model_list, exp_1, args):
 
 
 if __name__ == "__main__":
+    """ cmd = python tools/demo_tsr_two.py image --conf 0.3 --nms 0.45 --save_result --device gpu --path xx.jpg """
+    
     args = make_parser().parse_args()
     exp_file_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/exps/example/tsr/yolox_tsr_zo_nano.py"
     exp_file_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/exps/example/tsr/tsr_2nd_exp_dense.py"
     # checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_768_211019/yolox_tsr_zo_nano5_320norm_p_om_300_1e-4/best_ckpt.pth"
-    checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211111/yolox_tsr_zo_head2_320norm_p_om_300_1e-3_0p005/best_ckpt.pth"
+    # checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211111/yolox_tsr_zo_head2_320norm_p_om_300_1e-3_0p005/best_ckpt.pth"
+    # checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211116_v01_03/yolox_tsr_zo_head2_320norm_300_1e-3_0p005/best_ckpt.pth"
     # checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211111/tsr_v01v02_dense16L1_67_400_1e-3_0p005/best_ckpt.pth"
-    checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211111/tsr_v01v02_dense32_67_600_1e-3_0p005/best_ckpt.pth"
+    # checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211111/tsr_v01v02_dense32_67_600_1e-3_0p005/best_ckpt.pth"
+    checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211117_v3/yolox_tsr_zo_head2_960p_200_1e-4_0p05/best_ckpt.pth"
+    checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211117/tsr_v3_20k_dense32_67_300p_1e-4_0p01/best_ckpt.pth"
     exp_1 = get_exp(exp_file_1, args.name)
     exp_2 = get_exp(exp_file_2, args.name)
 

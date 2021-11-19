@@ -76,6 +76,7 @@ def voc_eval(
     cachedir,
     ovthresh=0.5,
     use_07_metric=False,
+    conf_thresh=0.0,         # zjw
 ):
     # first load gt
     if not os.path.isdir(cachedir):
@@ -125,6 +126,12 @@ def voc_eval(
     image_ids = [x[0] for x in splitlines]
     confidence = np.array([float(x[1]) for x in splitlines])
     BB = np.array([[float(z) for z in x[2:]] for x in splitlines])
+
+    if conf_thresh > 1e-5:           # zjw: filte by detect conf
+        image_ids = [image_ids[i] for i in range(len(image_ids)) if confidence[i] > conf_thresh]
+        mask = confidence > conf_thresh
+        confidence = confidence[mask]
+        BB = BB[mask]
 
     # sort by confidence
     sorted_ind = np.argsort(-confidence)
@@ -181,11 +188,5 @@ def voc_eval(
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
     ap = voc_ap(rec, prec, use_07_metric)
-    # if npos != 0:
-    # else:
-    #     print("fp = {}, tp = {}".format(fp, tp))
-    #     rec = 0
-    #     prec = 0
-    #     ap = 0
 
     return rec, prec, ap

@@ -7,7 +7,7 @@ import torch.distributed as dist
 
 from yolox.data import get_yolox_datadir
 from yolox.exp import Exp as MyExp
-from yolox.data.datasets.tsr_zo_classes import TSR_ZO_CLASSES
+from yolox.data.datasets import TSR_ZO_CLASSES, TSR_ZO_CLASSES_45
 
 
 class Exp(MyExp):
@@ -34,7 +34,7 @@ class Exp(MyExp):
         # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
         # self.exp_name = "train_tsr_zo_768_211019/yolox_tsr_zo_nano5_320norm_p_om_300_1e-4"
         # self.exp_name = "train_tsr_zo_960_211116_v01_03/yolox_tsr_zo_head2_320norm_300_1e-3_0p005"
-        self.exp_name = "train_tsr_zo_960_211117_v3/yolox_tsr_zo_h2_3_960p_200_1e-4_0p05"
+        self.exp_name = "train_tsr_2nd_128_211117/tsr_v3_20k_dense32_46_500p_1e-3_0p001"
 
     def get_model(self, sublinear=False):
 
@@ -74,9 +74,8 @@ class Exp(MyExp):
         with wait_for_the_master(local_rank):
             dataset = TSR_ZO_Detection(
                 data_dir=os.path.join(get_yolox_datadir(), "zone_tsr"),
+                # image_sets=[('zone_tsr_generate01', 'train')],
                 image_sets=[('zone_tsr_v3_20211111_20k', 'train')],
-                # image_sets=[('zone_tsr_v01v02_20211110_8k', 'train'),
-                #             ('zone_tsr_v03_20211111_12k', 'train')],
                 img_size=self.input_size,
                 preproc=TrainTransform(
                     max_labels=50,
@@ -136,11 +135,12 @@ class Exp(MyExp):
 
     def get_eval_loader(self, batch_size, is_distributed, testdev=False, legacy=False):
         from yolox.data import TSR_ZO_Detection, ValTransform
-        # from yolox.data import TSR_ZO_Detection_Two
+        from yolox.data import TSR_ZO_Detection_Two
 
-        valdataset = TSR_ZO_Detection(
+        # valdataset = TSR_ZO_Detection(
+        valdataset = TSR_ZO_Detection_Two(
             data_dir=os.path.join(get_yolox_datadir(), "zone_tsr"),
-            # image_sets=[('zone_tsr_v03_20211111_12k', 'test')],
+            # image_sets=[('zone_tsr_generate01', 'test')],
             image_sets=[('zone_tsr_v3_20211111_20k', 'test')],
             img_size=self.test_size,
             preproc=ValTransform(
@@ -168,14 +168,16 @@ class Exp(MyExp):
 
     def get_evaluator(self, batch_size, is_distributed, testdev=False, legacy=False):
         from yolox.evaluators import TSR_ZO_Evaluator
-        # from yolox.evaluators import TSR_ZO_Evaluator_Two
+        from yolox.evaluators import TSR_ZO_Evaluator_Two
 
         val_loader = self.get_eval_loader(batch_size, is_distributed, testdev, legacy)
-        evaluator = TSR_ZO_Evaluator(
+        # evaluator = TSR_ZO_Evaluator(
+        evaluator = TSR_ZO_Evaluator_Two(
             dataloader=val_loader,
             img_size=self.test_size,
             confthre=self.test_conf,
             nmsthre=self.nmsthre,
-            num_classes=self.num_classes,
+            # num_classes=self.num_classes,
+            num_classes=len(TSR_ZO_CLASSES_45)
         )
         return evaluator

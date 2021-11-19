@@ -13,3 +13,6 @@ from .tsr_zo import TSR_ZO_Detection
 from .tsr_zo_classes import TSR_ZO_CLASSES
 from .tsr_2nd import TSR_2ND_Detection
 from .tsr_2nd_classes import TSR_2ND_CLASSES
+from .tsr_zo_two import TSR_ZO_Detection_Two
+# from .tsr_zo_classes_66 import TSR_ZO_CLASSES_66
+from .tsr_zo_classes_45 import TSR_ZO_CLASSES_45
