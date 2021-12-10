@@ -256,10 +256,12 @@ def process_1st_output(output_1st, img, ratio, preproc=None):
         if i < num:
             box = [max(x,0) for x in boxes[i, :]]
             img_crop = img[box[1]:box[3], box[0]:box[2]].cpu().numpy()
-            img_resize = cv2.resize(img_crop, (128, 128))
+            # img_resize = cv2.resize(img_crop, (128, 128))
+            img_resize = cv2.resize(img_crop, (64, 64))
             # cv2.imshow('demo_crop', img_resize)
             # input_2nd.append(img_resize.transpose((2,0,1)))
-            img_resize, _ = preproc(img_resize, None, (128, 128))
+            # img_resize, _ = preproc(img_resize, None, (128, 128))
+            img_resize, _ = preproc(img_resize, None, (64, 64))
             input_2nd.append(img_resize)
         else:
             input_2nd.append(input_2nd[-1])

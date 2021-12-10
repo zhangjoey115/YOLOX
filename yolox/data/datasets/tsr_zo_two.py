@@ -361,7 +361,8 @@ class TSR_ZO_Detection_Two(Dataset):
             )
             aps += [ap]
             if iou == 0.5:
-                if len(prec) > 0 and len(rec) > 0:
+                # if isinstance(prec, list) and isinstance(rec, list) and len(prec) > 0 and len(rec) > 0:
+                if ap != 0:
                     print("AP for\t{}\t{:.4f}\tPrecision/Recall is:\t{:.3f}\t{:.3f}".format(cls, ap, prec[-1], rec[-1]))
                 else:
                     print("AP for\t{}\t{:.4f}\tPrecision/Recall is:\t{:.3f}\t{:.3f}".format(cls, ap, 0, 0))

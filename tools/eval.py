@@ -177,8 +177,9 @@ def main(exp, args, num_gpu):
         assert os.path.exists(
             trt_file
         ), "TensorRT model is not found!\n Run tools/trt.py first!"
-        model.head.decode_in_inference = False
-        decoder = model.head.decode_outputs
+        # model.head.decode_in_inference = False
+        # decoder = model.head.decode_outputs
+        decoder = model.decoding    # zjw: tsr_dense
     else:
         trt_file = None
         decoder = None

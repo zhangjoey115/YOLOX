@@ -220,9 +220,9 @@ def image_demo(predictor, vis_folder, path, current_time, save_result):
             save_file_name = os.path.join(save_folder, os.path.basename(image_name))
             logger.info("Saving detection result in {}".format(save_file_name))
             cv2.imwrite(save_file_name, result_image)
-        ch = cv2.waitKey(0)
-        if ch == 27 or ch == ord("q") or ch == ord("Q"):
-            break
+        # ch = cv2.waitKey(0)
+        # if ch == 27 or ch == ord("q") or ch == ord("Q"):
+        #     break
 
 
 def imageflow_demo(predictor, vis_folder, current_time, args):
@@ -270,10 +270,12 @@ def process_1st_output(output_1st, img, ratio, preproc=None):
         if i < num:
             box = [max(x,0) for x in boxes[i, :]]
             img_crop = img[box[1]:box[3], box[0]:box[2]]
-            img_resize = cv2.resize(img_crop, (128, 128))
+            # img_resize = cv2.resize(img_crop, (128, 128))
+            img_resize = cv2.resize(img_crop, (64, 64))
             # cv2.imshow('demo', img_resize)
             # input_2nd.append(img_resize.transpose((2,0,1)))
-            img_resize, _ = preproc(img_resize, None, (128, 128))
+            # img_resize, _ = preproc(img_resize, None, (128, 128))
+            img_resize, _ = preproc(img_resize, None, (64, 64))
             input_2nd.append(img_resize)
         else:
             input_2nd.append(input_2nd[-1])
@@ -379,8 +381,10 @@ if __name__ == "__main__":
     # checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211116_v01_03/yolox_tsr_zo_head2_320norm_300_1e-3_0p005/best_ckpt.pth"
     # checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211111/tsr_v01v02_dense16L1_67_400_1e-3_0p005/best_ckpt.pth"
     # checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211111/tsr_v01v02_dense32_67_600_1e-3_0p005/best_ckpt.pth"
-    checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211117_v3/yolox_tsr_zo_head2_960p_200_1e-4_0p05/best_ckpt.pth"
-    checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211117/tsr_v3_20k_dense32_67_300p_1e-4_0p01/best_ckpt.pth"
+    # checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211117_v3/yolox_tsr_zo_head2_960p_200_1e-4_0p05/best_ckpt.pth"
+    checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211117_v3/yolox_tsr_zo_h2_3_960p_200_1e-4_0p05/best_ckpt.pth"
+    # checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211117/tsr_v3_20k_dense32_46_300pwttk_1e-3_0p001/best_ckpt.pth"
+    checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211206/tsr_v3_20k_aug_dense32_46_i64_600_1e-3_0p001/best_ckpt.pth"
     exp_1 = get_exp(exp_file_1, args.name)
     exp_2 = get_exp(exp_file_2, args.name)
 

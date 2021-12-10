@@ -88,6 +88,7 @@ class TSR_2ND_Evaluator:
             model_trt.load_state_dict(torch.load(trt_file))
 
             x = torch.ones(1, 3, test_size[0], test_size[1]).cuda()
+            x = x.type(tensor_type)
             model(x)
             model = model_trt
 
@@ -104,7 +105,8 @@ class TSR_2ND_Evaluator:
 
                 outputs = model(imgs)
                 if decoder is not None:
-                    outputs = decoder(outputs, dtype=outputs.type())
+                    # outputs = decoder(outputs, dtype=outputs.type())
+                    outputs = decoder(outputs)
                 else:
                     outputs = model.decoding(outputs)
 
@@ -142,8 +144,12 @@ class TSR_2ND_Evaluator:
                 continue
             output = output.cpu()
 
-            scores = output[0].unsqueeze(0)
-            cls = output[1].unsqueeze(0)
+            if output.shape[0] > 1:
+                scores = output[0].unsqueeze(0)
+                cls = output[1].unsqueeze(0)
+            else:
+                scores = output[0, 0].unsqueeze(0)
+                cls = output[0, 1].unsqueeze(0)
             box = torch.tensor([0, 0, img_h.item(), img_w.item()])
             bboxes = box.repeat(cls.shape[0], 1)
 

@@ -195,8 +195,13 @@ if __name__ == "__main__":
     exp_file_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/exps/example/tsr/yolox_tsr_zo_nano_eval_two.py"
     exp_file_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/exps/example/tsr/tsr_2nd_exp_dense.py"
     # checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211116_v01_03/yolox_tsr_zo_head2_320norm_300_1e-3_0p005/best_ckpt.pth"
-    checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211117_v3/yolox_tsr_zo_h2_3_960p_200_1e-4_0p05/best_ckpt.pth"
-    checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211117/tsr_v3_20k_dense32_46_500p_1e-3_0p001/best_ckpt.pth"
+    # checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_zo_960_211117_v3/yolox_tsr_zo_h2_3_960p_200_1e-4_0p05/best_ckpt.pth"
+    checkpoint_1 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/Server/train_tsr_zo_960_211208_v1t7/yolox_tsr_zo_h2_3_960p_400p_1e-3_0p001/best_ckpt.pth"
+    # checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211117/tsr_v3_20k_dense32_46_300pwttk_1e-3_0p001/best_ckpt.pth"
+    # checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211125/tsr_v3_20k_dense16L1_46_i128_300p_1e-3_0p001/best_ckpt.pth"
+    # checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211125/tsr_v3_20k_dense32_46_i64_300pwttk_1e-3_0p001/best_ckpt.pth"
+    # checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211206/tsr_v3_20k_aug_dense32_46_i64_600_1e-3_0p001/best_ckpt.pth"
+    checkpoint_2 = "/home/zjw/workspace/DL_Vision/TSR/YOLOX/YOLOX_outputs/train_tsr_2nd_128_211209/tsr_v1t7_43k_aug_dense32_46_i64_600_1e-3_0p001/best_ckpt.pth"
     exp_1 = get_exp(exp_file_1, args.name)
     exp_2 = get_exp(exp_file_2, args.name)
 
