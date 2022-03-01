@@ -102,6 +102,7 @@ class TSR_ZO_Evaluator:
                 if is_time_record:
                     start = time.time()
 
+                # print("input = {}".format(imgs))
                 outputs = model(imgs)
                 if decoder is not None:
                     outputs = decoder(outputs, dtype=outputs.type())
@@ -113,6 +114,7 @@ class TSR_ZO_Evaluator:
                 outputs = postprocess(
                     outputs, self.num_classes, self.confthre, self.nmsthre
                 )
+                # print("outputs = {}".format(outputs))
                 if is_time_record:
                     nms_end = time_synchronized()
                     nms_time += nms_end - infer_end

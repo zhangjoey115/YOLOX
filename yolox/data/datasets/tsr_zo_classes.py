@@ -6,9 +6,9 @@
 
 # 3 class
 TSR_ZO_CLASSES = (
-	"p_other",
-	"i_other",
-	"w_other"
+	"p",
+	"i",
+	"w"
 )
 # 6 class
 # TSR_ZO_CLASSES = (

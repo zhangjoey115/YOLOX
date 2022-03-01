@@ -34,12 +34,12 @@ class YOLOPAFPN(nn.Module):
         # self.upsample = nn.Upsample(scale_factor=2, mode="nearest")
         # self.deconv1 = nn.ConvTranspose2d(int(in_channels[1] * width), int(in_channels[1] * width), 2, 2)
         # self.deconv2 = nn.ConvTranspose2d(int(in_channels[0] * width), int(in_channels[0] * width), 2, 2)
-        self.deconv1 = nn.ConvTranspose2d(128, 128, 2, 2,)
+        # self.deconv1 = nn.ConvTranspose2d(128, 128, 2, 2,)
         self.deconv2 = nn.ConvTranspose2d(64, 64, 2, 2,)
 
-        self.lateral_conv0 = BaseConv(
-            int(in_channels[2] * width), int(in_channels[1] * width), 1, 1, act=act
-        )
+        # self.lateral_conv0 = BaseConv(
+        #     int(in_channels[2] * width), int(in_channels[1] * width), 1, 1, act=act
+        # )
         self.C3_p4 = CSPLayer(
             int( in_channels[1] * width),
             # int(2 * in_channels[1] * width),
@@ -76,17 +76,17 @@ class YOLOPAFPN(nn.Module):
         )
 
         # bottom-up conv
-        self.bu_conv1 = Conv(
-            int(in_channels[1] * width), int(in_channels[1] * width), 3, 2, act=act
-        )
-        self.C3_n4 = CSPLayer(
-            int(2 * in_channels[1] * width),
-            int(in_channels[2] * width),
-            round(3 * depth),
-            False,
-            depthwise=depthwise,
-            act=act,
-        )
+        # self.bu_conv1 = Conv(
+        #     int(in_channels[1] * width), int(in_channels[1] * width), 3, 2, act=act
+        # )
+        # self.C3_n4 = CSPLayer(
+        #     int(2 * in_channels[1] * width),
+        #     int(in_channels[2] * width),
+        #     round(3 * depth),
+        #     False,
+        #     depthwise=depthwise,
+        #     act=act,
+        # )
 
     def forward(self, input):
         """

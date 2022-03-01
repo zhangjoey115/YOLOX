@@ -31,6 +31,7 @@ def make_parser():
 
 
 @logger.catch
+@torch.no_grad()
 def main():
     args = make_parser().parse_args()
     exp = get_exp(args.exp_file, args.name)

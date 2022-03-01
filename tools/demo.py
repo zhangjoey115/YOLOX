@@ -118,8 +118,9 @@ class Predictor(object):
         self.nmsthre = exp.nmsthre
         self.test_size = exp.test_size
         self.device = device
-        self.preproc = ValTransform(bgr_means=(0.406, 0.456, 0.485),
-                                    std=(0.225, 0.224, 0.229))
+        # self.preproc = ValTransform(bgr_means=(0.406, 0.456, 0.485),
+        #                             std=(0.225, 0.224, 0.229))
+        self.preproc = ValTransform()
         if trt_file is not None:
             from torch2trt import TRTModule
 
@@ -153,6 +154,7 @@ class Predictor(object):
 
         with torch.no_grad():
             t0 = time.time()
+            # print("input = {}".format(img))
             outputs = self.model(img)
             if self.decoder is not None:
                 outputs = self.decoder(outputs, dtype=outputs.type())
@@ -160,6 +162,7 @@ class Predictor(object):
                 outputs, self.num_classes, self.confthre,
                 self.nmsthre, class_agnostic=True
             )
+            # print("outputs = {}".format(outputs))
             logger.info("Infer time: {:.4f}s".format(time.time() - t0))
         return outputs, img_info
 
