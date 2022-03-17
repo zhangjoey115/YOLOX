@@ -53,6 +53,25 @@ def make_parser():
     return parser
 
 
+def read_img_input(exp):
+    import cv2
+    from yolox.data.data_augment import ValTransform
+
+    img_path = '/home/zjw/workspace/AI/tools/TensorRT_test/img_test/2_640.jpg'
+    preprocess = ValTransform()
+    img = cv2.imread(img_path)
+    img, _ = preprocess(img, None, exp.test_size)
+    img = torch.from_numpy(img).unsqueeze(0)
+    img = img.cuda()
+
+    return img
+
+
+def read_img_input_dummy(exp):
+    img = torch.full((1, 3, exp.test_size[0], exp.test_size[1]), 255)
+    return img
+
+
 @logger.catch
 def main():
     args = make_parser().parse_args()
@@ -65,16 +84,16 @@ def main():
 
    # ------------- Quantization -------------
     from pytorch_quantization import nn as quant_nn
-    from pytorch_quantization import calib
-    from pytorch_quantization.tensor_quant import QuantDescriptor
+    # from pytorch_quantization import calib
+    # from pytorch_quantization.tensor_quant import QuantDescriptor
     from pytorch_quantization import quant_modules
 
     quant_modules.initialize()
-
-    quant_desc_input = QuantDescriptor(calib_method='histogram')
-    quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
-    quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
-    quant_nn.QuantConvTranspose2d.set_default_quant_desc_input(quant_desc_input)
+    #
+    # quant_desc_input = QuantDescriptor(calib_method='histogram')
+    # quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
+    # quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
+    # quant_nn.QuantConvTranspose2d.set_default_quant_desc_input(quant_desc_input)
    # ------------- Quantization -------------
 
     model = exp.get_model()
@@ -96,7 +115,8 @@ def main():
     model.cuda()
 
     logger.info("loading checkpoint done.")
-    dummy_input = torch.randn(args.batch_size, 3, exp.test_size[0], exp.test_size[1])
+    # dummy_input = torch.randn(args.batch_size, 3, exp.test_size[0], exp.test_size[1])
+    dummy_input = read_img_input(exp)
 
    # ------------- Quantization -------------
     dummy_input = dummy_input.to(torch.float32)
