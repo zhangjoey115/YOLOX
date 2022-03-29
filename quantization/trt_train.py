@@ -91,6 +91,11 @@ def make_parser():
 
 @logger.catch
 def main(exp, args):
+    from pytorch_quantization import nn as quant_nn
+    from pytorch_quantization.tensor_quant import QuantDescriptor
+    quant_desc_input = QuantDescriptor(calib_method='histogram')
+    quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
+    quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
     from pytorch_quantization import quant_modules
     quant_modules.initialize()
 

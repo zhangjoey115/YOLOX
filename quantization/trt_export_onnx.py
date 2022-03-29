@@ -105,6 +105,8 @@ def main():
 
     # load the model state dict
     ckpt = torch.load(ckpt_file)
+    logger.info("\n{}".format(ckpt))
+    # return
 
     model.eval()
     if "model" in ckpt:
@@ -116,7 +118,8 @@ def main():
 
     logger.info("loading checkpoint done.")
     # dummy_input = torch.randn(args.batch_size, 3, exp.test_size[0], exp.test_size[1])
-    dummy_input = read_img_input(exp)
+    dummy_input = torch.rand(args.batch_size, 3, exp.test_size[0], exp.test_size[1]) * 255
+    # dummy_input = read_img_input(exp)
 
    # ------------- Quantization -------------
     dummy_input = dummy_input.to(torch.float32)

@@ -149,6 +149,7 @@ def main(exp, args, num_gpu):
     quant_desc_input = QuantDescriptor(calib_method='histogram')
     quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
     quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
+    quant_nn.QuantConvTranspose2d.set_default_quant_desc_input(quant_desc_input)
    # ------------- Quantization -------------
 
     model = exp.get_model()

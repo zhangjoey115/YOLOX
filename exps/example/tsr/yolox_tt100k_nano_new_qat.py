@@ -17,12 +17,12 @@ class Exp(MyExp):
         self.depth = 0.33
         self.width = 0.25
         self.warmup_epochs = 1
-        self.max_epoch = 30
-        self.no_aug_epochs = 10
+        self.max_epoch = 100
+        self.no_aug_epochs = 20
         self.no_aug_eval_epochs = 5
         self.eval_interval = 5
-        self.basic_lr_per_img = 1.0e-5 / 8.0      # devide batch_size
-        self.min_lr_ratio = 0.1
+        self.basic_lr_per_img = 1.0e-3 / 8.0      # devide batch_size
+        self.min_lr_ratio = 0.01
         # self.input_size = (416, 416)
         # self.test_size = (416, 416)
         self.input_size = (640, 640)
@@ -32,7 +32,7 @@ class Exp(MyExp):
         self.mosaic_scale = (0.5, 2)
         # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
         # self.exp_name = "test_nano640_210906/yolox_tt100k_nano11_640Pre_newCs_mulR0_0_0.5_20_1e-3"
-        self.exp_name = "tsr_tt100k_3_20220222/yolox_tt100k_nano3_640_200_1e-3_0p01_rm_unused_qat"
+        self.exp_name = "tsr_tt100k_3_20220222/yolox_tt100k_nano3_640_200_1e-3_0p01_rm_unused_qat_new"
 
     def get_model(self, sublinear=False):
 

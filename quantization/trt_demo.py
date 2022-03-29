@@ -30,7 +30,8 @@ def make_parser():
     parser.add_argument("-n", "--name", type=str, default=None, help="model name")
 
     parser.add_argument(
-        "--path", default="./datasets/tsr_voc/tt100k_voc_dataset/train_remain/", help="path to images or video"
+        # "--path", default="./datasets/tsr_voc/tt100k_voc_dataset/train_remain/", help="path to images or video"
+        "--path", default="/home/zjw/workspace/AI/tools/TensorRT_test/img_test/2_640.jpg", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -155,7 +156,7 @@ class Predictor(object):
 
         with torch.no_grad():
             t0 = time.time()
-            # print("input = {}".format(img))
+            print("input = {}".format(img))
             outputs = self.model(img)
             if self.decoder is not None:
                 outputs = self.decoder(outputs, dtype=outputs.type())
