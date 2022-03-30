@@ -10,6 +10,7 @@ import torchvision
 __all__ = [
     "filter_box",
     "postprocess",
+    "postprocess_od",
     "bboxes_iou",
     "matrix_iou",
     "adjust_box_anns",
@@ -68,6 +69,61 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class_agn
             )
 
         detections = detections[nms_out_index]
+        if output[i] is None:
+            output[i] = detections
+        else:
+            output[i] = torch.cat((output[i], detections))
+
+    return output
+
+
+def postprocess_od(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class_agnostic=False):
+    full_boxes_classes = num_classes['full_box']
+    front_boxes_classes = num_classes['front_box']
+    side_boxes_classes = num_classes['side_box']
+
+    box_corner = prediction.new(prediction.shape)
+    box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
+    box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
+    box_corner[:, :, 2] = prediction[:, :, 0] + prediction[:, :, 2] / 2
+    box_corner[:, :, 3] = prediction[:, :, 1] + prediction[:, :, 3] / 2
+    prediction[:, :, :4] = box_corner[:, :, :4]
+
+    output = [None for _ in range(len(prediction))]
+    for i, image_pred in enumerate(prediction):
+
+        # If none are remaining => process next image
+        if not image_pred.size(0):
+            continue
+        # Get score and class with highest confidence
+        full_class_conf, full_class_pred = torch.max(image_pred[:, 5: 5 + full_boxes_classes], 1, keepdim=True)
+        front_class_conf, front_class_pred = torch.max(image_pred[:, 5+full_boxes_classes+1: 5+full_boxes_classes+1+front_boxes_classes], 1, keepdim=True)
+        side_class_conf, side_class_pred = torch.max(image_pred[:, 5+full_boxes_classes+1+front_boxes_classes: 5+full_boxes_classes+1+front_boxes_classes+1+side_boxes_classes], 1, keepdim=True)
+
+        conf_mask = (image_pred[:, 4] * full_class_conf.squeeze() >= conf_thre).squeeze()
+        # Detections ordered as (x1, y1, x2, y2, obj_conf, class_conf, class_pred)
+        detections_full = torch.cat((image_pred[:, :5], full_class_conf, full_class_pred.float()), 1)
+        detections_full = detections_full[conf_mask]
+        if not detections_full.size(0):
+            continue
+
+        if class_agnostic:
+            nms_out_index = torchvision.ops.nms(
+                detections_full[:, :4],
+                detections_full[:, 4] * detections_full[:, 5],
+                nms_thre,
+            )
+        else:
+            nms_out_index = torchvision.ops.batched_nms(
+                detections_full[:, :4],
+                detections_full[:, 4] * detections_full[:, 5],
+                detections_full[:, 6],
+                nms_thre,
+            )
+
+        detections_full = detections_full[nms_out_index]
+
+        detections = {'full_box': detections_full, 'front_box': None, 'side_box': None}
         if output[i] is None:
             output[i] = detections
         else:

@@ -99,13 +99,15 @@ class CSPDarknet(nn.Module):
         self,
         dep_mul,
         wid_mul,
-        out_features=("dark3", "dark4", "dark5"),
+        out_features=("dark3", "dark4", "dark5", "dark6"),
         depthwise=False,
         act="silu",
+        task="od",
     ):
         super().__init__()
         assert out_features, "please provide output features of Darknet"
         self.out_features = out_features
+        self.task = task
         Conv = DWConv if depthwise else BaseConv
 
         base_channels = int(wid_mul * 64)  # 64
@@ -164,6 +166,21 @@ class CSPDarknet(nn.Module):
             ),
         )
 
+        # dark6
+        if self.task == 'od':
+            self.dark6 = nn.Sequential(
+                Conv(base_channels * 16, base_channels * 32, 3, 2, act=act),
+                SPPBottleneck(base_channels * 32, base_channels * 32, activation=act),
+                CSPLayer(
+                    base_channels * 32,
+                    base_channels * 16,
+                    n=base_depth,
+                    shortcut=False,
+                    depthwise=depthwise,
+                    act=act,
+                ),
+            )
+
     def forward(self, x):
         outputs = {}
         x = self.stem(x)
@@ -176,4 +193,8 @@ class CSPDarknet(nn.Module):
         outputs["dark4"] = x
         x = self.dark5(x)
         outputs["dark5"] = x
+
+        if self.task == 'od':
+            x = self.dark6(x)
+            outputs["dark6"] = x
         return {k: v for k, v in outputs.items() if k in self.out_features}

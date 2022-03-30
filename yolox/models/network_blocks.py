@@ -123,8 +123,8 @@ class SPPBottleneck(nn.Module):
     """Spatial pyramid pooling layer used in YOLOv3-SPP"""
 
     def __init__(
-        # self, in_channels, out_channels, kernel_sizes=(5, 9, 13), activation="silu"
-        self, in_channels, out_channels, kernel_sizes = (5, 7), activation = "silu"
+        self, in_channels, out_channels, kernel_sizes=(5, 9, 13), activation="silu"
+        # self, in_channels, out_channels, kernel_sizes = (5, 7), activation = "silu"
     ):
         super().__init__()
         hidden_channels = in_channels // 2
@@ -216,8 +216,10 @@ class Focus(nn.Module):
         super().__init__()
         # self.conv1 = nn.Conv2d(in_channels, out_channels//2, 3, 2, 1)
         # self.conv2 = nn.Conv2d(out_channels//2, out_channels, 3, 1, 1)
-        self.conv1 = BaseConv(in_channels, out_channels//2, 3, 2, act=act)
-        self.conv2 = BaseConv(out_channels//2, out_channels, 3, 1, act=act)
+        self.conv1 = BaseConv(in_channels, out_channels//2, 3, 2, 1, act=act)    # for OD
+        self.conv2 = BaseConv(out_channels//2, out_channels, 3, 1, 1, act=act)
+        # self.conv1 = BaseConv(in_channels, out_channels//2, 3, 2, act=act)    # for tsr3
+        # self.conv2 = BaseConv(out_channels//2, out_channels, 3, 1, act=act)
         # self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
     def forward(self, x):

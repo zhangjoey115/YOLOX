@@ -9,3 +9,6 @@ from .yolo_head import YOLOXHead
 from .yolo_pafpn import YOLOPAFPN
 from .yolox import YOLOX
 from .tsr_dense import DenseNetTSR
+from .yolo_head_od import YOLOXHead_OD
+from .yolo_pafpn_od import YOLOPAFPN_OD
+from .yolox_od import YOLOX_OD
