@@ -143,6 +143,19 @@ class Trainer:
         # value of epoch will be set in `resume_train`
         model = self.resume_train(model)
 
+        logger.info("Save init model before training start.")
+        ckpt_state = {
+            "start_epoch": 1,
+            "model": model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+        }
+        save_checkpoint(
+            ckpt_state,
+            False,
+            self.file_name,
+            "init_model",
+        )
+
         # data related init
         self.no_aug = self.start_epoch >= self.max_epoch - self.exp.no_aug_epochs
         self.train_loader = self.exp.get_data_loader(
