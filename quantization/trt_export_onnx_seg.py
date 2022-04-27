@@ -8,6 +8,7 @@ from loguru import logger
 
 import torch
 from torch import nn
+import numpy as np
 
 from yolox.exp import get_exp
 from yolox.models.network_blocks import SiLU
@@ -36,7 +37,7 @@ def make_parser():
     parser.add_argument(
         "-f",
         "--exp_file",
-        default=None,
+        default='./exps/example/seg/seg_exp_quant.py',
         type=str,
         help="expriment description file",
     )
@@ -70,6 +71,23 @@ def read_img_input(exp):
 def read_img_input_dummy(exp):
     img = torch.full((1, 3, exp.test_size[0], exp.test_size[1]), 255)
     return img
+
+
+def input_process(input_tensor):
+    mean = np.array([[[0.3257, 0.3690, 0.3223]]])
+    std = np.array([[[0.2112, 0.2148, 0.2115]]])
+
+    image = input_tensor.cpu().numpy().squeeze(0)
+    image = image.transpose((1, 2, 0))
+    image = image.astype(np.float32) / 255.0
+    image = (image - mean) / std
+    
+    image = image.transpose((2, 0, 1))
+    image = image[np.newaxis, :, :, :]
+    image = np.array(image, dtype=np.float32)
+    image = torch.from_numpy(image)
+
+    return image
 
 
 @logger.catch
@@ -111,8 +129,10 @@ def main():
     model.eval()
     if "model" in ckpt:
         ckpt = ckpt["model"]
+    elif 'model_state_dict' in ckpt:
+        ckpt = ckpt['model_state_dict']
     model.load_state_dict(ckpt)
-    model = replace_module(model, nn.SiLU, SiLU)
+    # model = replace_module(model, nn.SiLU, SiLU)
     if "head" in model.__dict__['_modules']:
         model.head.decode_in_inference = False
     model.cuda()
@@ -120,7 +140,7 @@ def main():
     logger.info("loading checkpoint done.")
     # dummy_input = torch.randn(args.batch_size, 3, exp.test_size[0], exp.test_size[1])
     dummy_input = torch.rand(args.batch_size, 3, exp.test_size[0], exp.test_size[1]) * 255
-    # dummy_input = read_img_input(exp)
+    dummy_input = input_process(dummy_input)
 
    # ------------- Quantization -------------
     dummy_input = dummy_input.to(torch.float32)
