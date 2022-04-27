@@ -5,8 +5,8 @@
 import torch
 import torch.nn as nn
 
-from .darknet import CSPDarknet
-from .network_blocks import BaseConv, CSPLayer, DWConv
+from .darknet_od import CSPDarknet
+from .network_blocks_od import BaseConv, CSPLayer, DWConv
 
 
 class YOLOPAFPN_OD(nn.Module):

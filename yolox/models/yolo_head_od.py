@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from yolox.utils import bboxes_iou
 
 from .losses import IOUloss
-from .network_blocks import BaseConv, DWConv
+from .network_blocks_od import BaseConv, DWConv
 
 
 class YOLOXHead_OD(nn.Module):
