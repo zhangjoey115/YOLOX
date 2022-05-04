@@ -16,7 +16,8 @@ from pytorch_quantization import nn as quant_nn
 from pytorch_quantization import calib
 from pytorch_quantization.tensor_quant import QuantDescriptor
 
-
+import numpy as np
+import cv2
 import argparse
 from yolox.exp import get_exp
 from loguru import logger
@@ -36,6 +37,44 @@ def make_parser():
     return parser
 
 
+def input_process(input_tensor):
+    mean = np.array([[[0.3257, 0.3690, 0.3223]]])
+    std = np.array([[[0.2112, 0.2148, 0.2115]]])
+
+    image = input_tensor.cpu().numpy().squeeze(0)
+    image = image.transpose((1, 2, 0))
+    image = image.astype(np.float32) / 255.0
+    image = (image - mean) / std
+    
+    image = image.transpose((2, 0, 1))
+    image = image[np.newaxis, :, :, :]
+    image = np.array(image, dtype=np.float32)
+    image = torch.from_numpy(image)
+
+    return image
+
+
+def input_pic_fetch(image_path):
+    mean = np.array([[[0.3257, 0.3690, 0.3223]]])
+    std = np.array([[[0.2112, 0.2148, 0.2115]]])
+    roi = [0, 56, 1920, 1080]
+    size = [1920, 1024]
+
+    image = cv2.imread(image_path)
+    image = image[roi[1]:roi[3], roi[0]:roi[2]]
+    image = cv2.resize(image, (size[0], size[1]))
+
+    image = image.astype(np.float32) / 255.0
+    image = (image - mean) / std
+    
+    image = image.transpose((2, 0, 1))
+    image = image[np.newaxis, :, :, :]
+    image = np.array(image, dtype=np.float32)
+    image = torch.from_numpy(image)
+
+    return image
+
+
 def collect_stats(model, data_loader, num_batches):
     """Feed data to the network and collect statistic"""
 
@@ -49,13 +88,11 @@ def collect_stats(model, data_loader, num_batches):
                 module.disable()
 
     dev = next(model.parameters()).device
-    for i, (image, _, _, _) in tqdm(enumerate(data_loader), total=num_batches):
-        # image_g = image.cuda()
-        # if image_g is None:
-        #     image_g = image.to(dev)
+    # for i, (image, _, _, _) in tqdm(enumerate(data_loader), total=num_batches):
+    if True:
+        pic_path = '/home/zjw/workspace/AI/perception/vision_learning/deployment/sample_int8/test_pic/000349.jpg'
+        image = input_pic_fetch(pic_path)
         model(image.cuda())
-        if i >= num_batches:
-            break
 
     # Disable calibrators
     for name, module in model.named_modules():
@@ -76,7 +113,7 @@ def compute_amax(model, **kwargs):
                     module.load_calib_amax(strict=False)
                 else:
                     module.load_calib_amax(strict=False, **kwargs)
-#             print(F"{name:40}: {module}")
+                print("Calibrated {}".format(name))
     model.cuda()
 
 
@@ -92,17 +129,20 @@ def quantize_model(exp, ckpt_file, data_loader, num_pics=2):
     ckpt = torch.load(ckpt_file)
     if "model" in ckpt:
         ckpt = ckpt["model"]
+    elif 'model_state_dict' in ckpt:
+        ckpt = ckpt['model_state_dict']
     model.load_state_dict(ckpt)
-    model.head.decode_in_inference = False
+    if "head" in model.__dict__['_modules']:
+        model.head.decode_in_inference = False
 
     # model = torchvision.models.resnet50(pretrained=True, progress=False)
     model.eval()
     model.cuda()
     with torch.no_grad():
         collect_stats(model, data_loader, num_batches=num_pics)
-        # compute_amax(model, method="percentile", percentile=99.99)
+        compute_amax(model, method="percentile", percentile=99.99)
         # compute_amax(model, method="percentile", percentile=99.9)
-        compute_amax(model, method="entropy")
+        # compute_amax(model, method="entropy")
 
     return model
 
@@ -129,20 +169,20 @@ if __name__ == "__main__":
     else:
         ckpt_file = args.ckpt
 
-    model = quantize_model(exp, ckpt_file, data_loader, num_pics=20)
+    model = quantize_model(exp, ckpt_file, data_loader, num_pics=200)
 
-    model.head.decode_in_inference = True
-    batch_size = 8
-    evaluator = exp.get_evaluator(
-        batch_size=batch_size, is_distributed=is_distributed
-        )
-    ap50_95, ap50, summary = exp.eval(
-        model, evaluator, is_distributed
-    )
-    logger.info("val/COCOAP50: {:.4f}, val/COCOAP50_95: {:.4f}".format(ap50, ap50_95))
-    logger.info("\n" + summary)
+    # model.head.decode_in_inference = True
+    # batch_size = 8
+    # evaluator = exp.get_evaluator(
+    #     batch_size=batch_size, is_distributed=is_distributed
+    #     )
+    # ap50_95, ap50, summary = exp.eval(
+    #     model, evaluator, is_distributed
+    # )
+    # logger.info("val/COCOAP50: {:.4f}, val/COCOAP50_95: {:.4f}".format(ap50, ap50_95))
+    # logger.info("\n" + summary)
 
-    file_name = os.path.join(file_dir, 'best_ptq_t200_entropy.pth')
+    file_name = os.path.join(file_dir, 'lane_ptq_t1pic_p9999.pth')
     torch.save(model.state_dict(), file_name)
 
 
