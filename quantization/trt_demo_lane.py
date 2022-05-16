@@ -281,17 +281,17 @@ def main(exp, args):
 
     quant_modules.initialize()
 
-    quant_desc_input = QuantDescriptor(calib_method='histogram')
-    quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
-    quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
+    # quant_desc_input = QuantDescriptor(calib_method='histogram')
+    # quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
+    # quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
    # ------------- Quantization -------------
 
     model = exp.get_model()
-    logger.info("Model Summary: {}".format(get_model_info(model, exp.test_size)))
+    # logger.info("Model Summary: {}".format(get_model_info(model, exp.test_size)))
+    # logger.info("\n{}\n".format(model))
 
     if args.device == "gpu":
         model.cuda()
-    model.eval()
 
     if not args.trt:
         if args.ckpt is None:
@@ -308,6 +308,8 @@ def main(exp, args):
             ckpt = ckpt['model_state_dict']
         model.load_state_dict(ckpt)
         logger.info("loaded checkpoint done.")
+        logger.info("\n{}\n".format(model))
+    model.eval()
 
     if args.fuse:
         logger.info("\tFusing model...")
@@ -335,6 +337,7 @@ def main(exp, args):
 
 
 if __name__ == "__main__":
+    torch.set_printoptions(precision=4, edgeitems=5, linewidth=100, sci_mode=False)
     args = make_parser().parse_args()
     exp = get_exp(args.exp_file, args.name)
 

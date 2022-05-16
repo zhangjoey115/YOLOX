@@ -168,11 +168,11 @@ class BGALayer(nn.Module):
         )
         self.right_conv = ConvBNReLU(channel_config[0], channel_config[0], 3, stride=1, padding=1)
         
-        from pytorch_quantization import quant_modules
-        quant_modules.deactivate()
+        # from pytorch_quantization import quant_modules
+        # quant_modules.deactivate()
         self.right1_deconv = nn.ConvTranspose2d(channel_config[0], channel_config[0], 4, 4, padding=0, output_padding=0, bias=True)
         self.right_deconv_1 = nn.ConvTranspose2d(channel_config[0], channel_config[0], 4, 4, padding=0, output_padding=0, bias=True)
-        quant_modules.initialize()
+        # quant_modules.initialize()
 
     def forward(self, feat_d, feat_r):
         dsize = feat_d.size()[2:]
@@ -367,10 +367,10 @@ class SegmentHead(nn.Module):
         self.drop = nn.Dropout(0.1)
         self.conv_out = nn.Conv2d(self.last_chan, n_classes, kernel_size=1, stride=1, padding=0, bias=True)
 
-        from pytorch_quantization import quant_modules
-        quant_modules.deactivate()
+        # from pytorch_quantization import quant_modules
+        # quant_modules.deactivate()
         self.deconv = nn.ConvTranspose2d(n_classes, n_classes, scale, scale, padding=0, output_padding=0, bias=True)
-        quant_modules.initialize()
+        # quant_modules.initialize()
 
     def forward(self, x):
         feat = self.conv_1(x)

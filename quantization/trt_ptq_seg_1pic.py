@@ -182,8 +182,25 @@ if __name__ == "__main__":
     # logger.info("val/COCOAP50: {:.4f}, val/COCOAP50_95: {:.4f}".format(ap50, ap50_95))
     # logger.info("\n" + summary)
 
-    file_name = os.path.join(file_dir, 'lane_ptq_t1pic_p9999.pth')
+    file_name = os.path.join(file_dir, 'lane_ptq_t1pic_p9999_notrans.pth')
     torch.save(model.state_dict(), file_name)
+
+    # export onnx
+    batch_size = 1
+    onnx_name = file_name[:-3]+'onnx'
+    dummy_input = torch.rand(batch_size, 3, exp.test_size[0], exp.test_size[1])
+    dummy_input = dummy_input.to(torch.float32)
+    quant_nn.TensorQuantizer.use_fb_fake_quant = True
+    torch.onnx.export(
+        model,
+        dummy_input.cuda(),
+        onnx_name,
+        input_names=['images'],
+        output_names=['output'],
+        dynamic_axes=None,
+        # verbose=True,
+        opset_version=13,
+    )
 
 
 # # from absl import logging

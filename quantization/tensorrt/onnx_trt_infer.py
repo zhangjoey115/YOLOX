@@ -14,16 +14,18 @@ def make_parser():
     parser.add_argument(
         "-i",
         "--input",
-        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/debug_python/000349.jpg",
+        # default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/image/000349.jpg",
+        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/image/001799.jpg",
+        # default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/image/007799.jpg",
         type=str,
         help="input path",
     )
     parser.add_argument("-o", "--onnx", type=str, 
-        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/debug_python/lane_ep148_n1.onnx",
+        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0512/lane_ep250.onnx",
         # default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/debug_python/lane_ep148_ptq.onnx",
         help="onnx path")
     parser.add_argument("-e", "--engine", type=str, 
-        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/debug_python/lane_ep148_n1.trt",
+        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0512/lane_ep250.trt",
         # default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/debug_python/lane_ep148_ptq.trt",
         help="engine path")
     parser.add_argument("-p", "--precision", type=str,
@@ -32,10 +34,14 @@ def make_parser():
     return parser
 
 
-outputs_fp = ['537', '344', '372']
-outputs_int = ['490', '492', '608']
-outputs_size_fp = {'537': (1, 18, 512, 960), '344': (1, 18, 512, 960), '372': (1, 20, 254, 478)}
-outputs_size_int = {'490': (1, 18, 512, 960), '492': (1, 18, 512, 960), '608': (1, 20, 254, 478)}
+# outputs_fp = ['537', '344', '372']
+# outputs_int = ['490', '492', '608']
+# outputs_size_fp = {'537': (1, 18, 512, 960), '344': (1, 18, 512, 960), '372': (1, 20, 254, 478)}
+# outputs_size_int = {'490': (1, 18, 512, 960), '492': (1, 18, 512, 960), '608': (1, 20, 254, 478)}
+outputs_fp = []
+outputs_int = []
+outputs_size_fp = {}
+outputs_size_int = {}
 outputs_mark = {'FP16': {'out': outputs_fp, 'size': outputs_size_fp},
                 'INT8': {'out': outputs_int, 'size': outputs_size_int}}
 
@@ -59,11 +65,11 @@ def get_image_processed(image_path):
     return image
 
 
-def post_process(output_raw, output_save_path, index=0):
+def post_process(output_raw, output_save_path, index=0, cls=3):
     output_data = np.array(output_raw[index])
     output_data = np.argmax(output_data, 1).squeeze(0)
     # print(output_data.shape)
-    image_output = output_data*100
+    image_output = output_data*int(255/cls)
     cv2.imwrite(output_save_path, image_output)
     return
 
@@ -170,8 +176,12 @@ def trt_infer(image_path, onnx_file_path, engine_file_path, precision):
     output_shapes.extend(output_shapes_org)
     outputs_np = [output.reshape(shape) for output, shape in zip(trt_outputs, output_shapes)]
 
-    image_path_out = image_path + '.py.{}.jpg'.format(precision)
-    post_process(outputs_np, image_path_out, index=-2)
+    import re
+    name_ex = re.split('[./]', onnx_file_path)[-2]
+    image_path_out = image_path + '.py.{}.{}.{}.jpg'.format('lane', precision, name_ex)
+    post_process(outputs_np, image_path_out, index=-2, cls=3)
+    image_path_out = image_path + '.py.{}.{}.{}.jpg'.format('seg', precision, name_ex)
+    post_process(outputs_np, image_path_out, index=-1, cls=5)
 
 
 if __name__ == "__main__":

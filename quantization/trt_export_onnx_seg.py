@@ -114,6 +114,7 @@ def main():
     # quant_nn.QuantConvTranspose2d.set_default_quant_desc_input(quant_desc_input)
    # ------------- Quantization -------------
 
+    # model = exp.get_model(train_flag=True)
     model = exp.get_model()
     if args.ckpt is None:
         file_name = os.path.join(exp.output_dir, args.experiment_name)
@@ -126,7 +127,6 @@ def main():
     # logger.info("\n{}".format(ckpt))
     # return
 
-    model.eval()
     if "model" in ckpt:
         ckpt = ckpt["model"]
     elif 'model_state_dict' in ckpt:
@@ -135,15 +135,16 @@ def main():
     # model = replace_module(model, nn.SiLU, SiLU)
     if "head" in model.__dict__['_modules']:
         model.head.decode_in_inference = False
+    model.eval()
     model.cuda()
 
     logger.info("loading checkpoint done.")
     # dummy_input = torch.randn(args.batch_size, 3, exp.test_size[0], exp.test_size[1])
-    dummy_input = torch.rand(args.batch_size, 3, exp.test_size[0], exp.test_size[1])
+    dummy_input = torch.ones(args.batch_size, 3, exp.test_size[0], exp.test_size[1])
     # dummy_input = input_process(dummy_input)
 
    # ------------- Quantization -------------
-    dummy_input = dummy_input.to(torch.float32)
+    # dummy_input = dummy_input.to(torch.float32)
 
     quant_nn.TensorQuantizer.use_fb_fake_quant = True
    # ------------- Quantization -------------
@@ -151,16 +152,16 @@ def main():
     # torch.onnx.export(
     #     model, dummy_input, "test.onnx", verbose=True, opset_version=13, enable_onnx_checker=False)
 
-    torch.onnx.export(
+    torch.onnx._export(
         model,
         dummy_input.cuda(),
         args.output_name,
         input_names=[args.input],
         output_names=[args.output],
-        dynamic_axes={args.input: {0: 'batch'},
-                      args.output: {0: 'batch'}} if args.dynamic else None,
-        verbose=True, 
+        # dynamic_axes=None,
+        # verbose=True, 
         opset_version=args.opset,
+        do_constant_folding=False,
     )
     logger.info("generated onnx model named {}".format(args.output_name))
 

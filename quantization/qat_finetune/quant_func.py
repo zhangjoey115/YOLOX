@@ -1,129 +1,51 @@
-import datetime
 import os
-import sys
-import time
 
 import torch
-import torch.utils.data
 from torch import nn
 
 from tqdm import tqdm
 
-import torchvision
-from torchvision import transforms
 
-from pytorch_quantization import nn as quant_nn
-from pytorch_quantization import calib
-from pytorch_quantization.tensor_quant import QuantDescriptor
+def quantize_model_process(model, data_loader, num_pic=2):
+    from pytorch_quantization import nn as quant_nn
+    from pytorch_quantization import calib
 
-import numpy as np
-import argparse
-from yolox.exp import get_exp
-from loguru import logger
-
-
-def make_parser():
-    parser = argparse.ArgumentParser("YOLOX train parser")
-    parser.add_argument(
-        "-f",
-        "--exp_file",
-        default="./exps/example/tsr/yolox_tt100k_nano_new.py",
-        type=str,
-        help="plz input your expriment description file",
-    )
-    parser.add_argument("-c", "--ckpt", default=None, type=str, help="ckpt path")
-    parser.add_argument("-n", "--name", type=str, default=None, help="model name")
-    return parser
-
-
-def input_process(input_tensor):
-    mean = np.array([[[0.3257, 0.3690, 0.3223]]])
-    std = np.array([[[0.2112, 0.2148, 0.2115]]])
-
-    image = input_tensor.cpu().numpy().squeeze(0)
-    image = image.transpose((1, 2, 0))
-    image = image.astype(np.float32) / 255.0
-    image = (image - mean) / std
-    
-    image = image.transpose((2, 0, 1))
-    image = image[np.newaxis, :, :, :]
-    image = np.array(image, dtype=np.float32)
-    image = torch.from_numpy(image)
-
-    return image
-
-
-def collect_stats(model, data_loader, num_batches):
-    """Feed data to the network and collect statistic"""
-
-    # Enable calibrators
-    for name, module in model.named_modules():
-        if isinstance(module, quant_nn.TensorQuantizer):
-            if module._calibrator is not None:
-                module.disable_quant()
-                module.enable_calib()
-            else:
-                module.disable()
-
-    dev = next(model.parameters()).device
-    for i, (image, _, _, _) in tqdm(enumerate(data_loader), total=num_batches):
-        # image_g = image.cuda()
-        # if image_g is None:
-        #     image_g = image.to(dev)
-        image = input_process(image)
-        model(image.cuda())
-        if i >= num_batches:
-            break
-
-    # Disable calibrators
-    for name, module in model.named_modules():
-        if isinstance(module, quant_nn.TensorQuantizer):
-            if module._calibrator is not None:
-                module.enable_quant()
-                module.disable_calib()
-            else:
-                module.enable()
-
-
-def compute_amax(model, **kwargs):
-    # Load calib result
-    for name, module in model.named_modules():
-        if isinstance(module, quant_nn.TensorQuantizer):
-            if module._calibrator is not None:
-                if isinstance(module._calibrator, calib.MaxCalibrator):
-                    module.load_calib_amax(strict=False)
-                else:
-                    module.load_calib_amax(strict=False, **kwargs)
-                print("Calibrated {}".format(name))
-    model.cuda()
-
-
-def quantize_model(exp, ckpt_file, data_loader, num_pics=2):
-    quant_desc_input = QuantDescriptor(calib_method='histogram')
-    quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
-    quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
-
-    from pytorch_quantization import quant_modules
-    quant_modules.initialize()
-
-    model = exp.get_model(train_flag=True)
-    ckpt = torch.load(ckpt_file)
-    if "model" in ckpt:
-        ckpt = ckpt["model"]
-    elif 'model_state_dict' in ckpt:
-        ckpt = ckpt['model_state_dict']
-    model.load_state_dict(ckpt)
-    if "head" in model.__dict__['_modules']:
-        model.head.decode_in_inference = False
-
-    # model = torchvision.models.resnet50(pretrained=True, progress=False)
-    model.eval()
     model.cuda()
     with torch.no_grad():
-        collect_stats(model, data_loader, num_batches=num_pics)
-        compute_amax(model, method="percentile", percentile=99.99)
-        # compute_amax(model, method="percentile", percentile=99.9)
-        # compute_amax(model, method="entropy")
+        # Enable calibrators
+        for _, module in model.named_modules():
+            if isinstance(module, quant_nn.TensorQuantizer):
+                if module._calibrator is not None:
+                    module.disable_quant()
+                    module.enable_calib()
+                else:
+                    module.disable()
+
+        for i, (image, _, _) in tqdm(enumerate(data_loader), total=num_pic):
+            model(image.cuda())
+            if i >= num_pic:
+                break
+
+        # Disable calibrators
+        for _, module in model.named_modules():
+            if isinstance(module, quant_nn.TensorQuantizer):
+                if module._calibrator is not None:
+                    module.enable_quant()
+                    module.disable_calib()
+                else:
+                    module.enable()
+
+        # Load calib result
+        for _, module in model.named_modules():
+            if isinstance(module, quant_nn.TensorQuantizer):
+                if module._calibrator is not None:
+                    if isinstance(module._calibrator, calib.MaxCalibrator):
+                        module.load_calib_amax(strict=False)
+                    else:
+                        module.load_calib_amax(strict=False, method="percentile", percentile=99.99)
+
+        # collect_stats(model, data_loader, num_batches=num_pics)
+        # compute_amax(model, method="percentile", percentile=99.99)
 
     return model
 

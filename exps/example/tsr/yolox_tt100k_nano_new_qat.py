@@ -17,7 +17,7 @@ class Exp(MyExp):
         self.depth = 0.33
         self.width = 0.25
         self.warmup_epochs = 1
-        self.max_epoch = 100
+        self.max_epoch = 1
         self.no_aug_epochs = 20
         self.no_aug_eval_epochs = 5
         self.eval_interval = 5
@@ -32,7 +32,8 @@ class Exp(MyExp):
         self.mosaic_scale = (0.5, 2)
         # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
         # self.exp_name = "test_nano640_210906/yolox_tt100k_nano11_640Pre_newCs_mulR0_0_0.5_20_1e-3"
-        self.exp_name = "tsr_tt100k_3_20220222/yolox_tt100k_nano3_640_200_1e-3_0p01_rm_unused_qat_new"
+        self.exp_name = "tsr_tt100k_3_20220427/yolox_tt100k_nano3_640_200_1e-3_0p01_rm_unused_qat_test"
+        self.ema = False
 
     def get_model(self, sublinear=False):
 

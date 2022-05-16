@@ -29,8 +29,9 @@ def image_process(image_path):
     return image
 
 def onnx_run():
-    image_path = '/home/zjw/workspace/AI/perception/YOLOX/models/lane/image/007799.jpg'
-    onnx_path = '/home/zjw/workspace/AI/perception/YOLOX/models/lane/lane_ep148_ptq.onnx'
+    image_path = '/home/zjw/workspace/AI/perception/YOLOX/models/lane/image/000349.jpg'
+    # onnx_path = "/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0514/lane_0514_q1_4.onnx"
+    onnx_path = "/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0514/lane_quant_0512_org.onnx.folded.onnx"
 
     image_input = image_process(image_path)
     session = rt.InferenceSession(onnx_path)
@@ -45,7 +46,9 @@ def onnx_run():
 
     image_output = output_data*100
 
-    image_path_out = image_path + '.onnx.ptq.jpg'
+    import re
+    name_ex = re.split('[./]', onnx_path)[-2]
+    image_path_out = image_path + '.onnx.{}.jpg'.format(name_ex)
     cv2.imwrite(image_path_out, image_output)
 
 

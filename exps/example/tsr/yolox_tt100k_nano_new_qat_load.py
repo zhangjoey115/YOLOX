@@ -25,14 +25,16 @@ class Exp(MyExp):
         self.min_lr_ratio = 0.01
         # self.input_size = (416, 416)
         # self.test_size = (416, 416)
-        self.input_size = (1024, 1920)
-        self.test_size = (1024, 1920)
+        self.input_size = (640, 640)
+        self.test_size = (640, 640)
         # self.multiscale_range = 0
         self.mixup_prob = 0.0       # 1.0
         self.mosaic_scale = (0.5, 2)
-        self.exp_name = "seg_test_20220505/seg_test_20220505_finetune"
+        # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
+        # self.exp_name = "test_nano640_210906/yolox_tt100k_nano11_640Pre_newCs_mulR0_0_0.5_20_1e-3"
+        self.exp_name = "tsr_tt100k_3_20220411/yolox_tt100k_nano3_640_200_1e-3_0p01_qat_load_test"
 
-    def get_model(self, train_flag=False, sublinear=False):
+    def get_model(self, sublinear=False):
 
         def init_yolo(M):
             for m in M.modules():
@@ -40,22 +42,18 @@ class Exp(MyExp):
                     m.eps = 1e-3
                     m.momentum = 0.03
         if "model" not in self.__dict__:
-            from yolox.models import SegNet
+            from yolox.models import YOLOX, YOLOPAFPN, YOLOXHead
+            # in_channels = [256, 512, 1024]
+            in_channels = [256, 512, 1024]
+            # strides = [8, 16],
+            # NANO model use depthwise = True, which is main difference.
+            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels, depthwise=False, act='relu')
+            head = YOLOXHead(self.num_classes, self.width, strides=[8, 16], in_channels=[256, 512], depthwise=False, act='relu')
+            self.model = YOLOX(backbone, head)
 
-            DetailBranch_config = [18, 30, 50, 98, 128]
-            SementBranch_config = [10, 20, 40, 24, 32, 64]
-            BGALayer_config = [128, 64]
-            SegmentHead_confg = [128, 64]
-            Aux_SegmentHead_confg = [64, 64]
-            lane_class = 3
-            roadway_class = 5
-            train_flag = train_flag
-            self.model = SegNet(DetailBranch_config, SementBranch_config, BGALayer_config, 
-                                SegmentHead_confg, Aux_SegmentHead_confg, lane_class, roadway_class, train_flag)
-
-        # self.model.apply(init_yolo)
+        self.model.apply(init_yolo)
+        self.model.head.initialize_biases(1e-2)
         return self.model
-
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False, cache_img=False):
         from yolox.data import (

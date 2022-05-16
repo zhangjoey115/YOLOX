@@ -14,17 +14,21 @@ def make_parser():
     parser.add_argument(
         "-i",
         "--input",
-        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/debug_python/000349.jpg",
+        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/image/000349.jpg",
+        # default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/image/001799.jpg",
+        # default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/image/007799.jpg",
         type=str,
         help="input path",
     )
     parser.add_argument("-o", "--onnx", type=str, 
         # default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/debug_python/lane_ep148_n1.onnx",
-        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/debug_python/lane_ep148_ptq.onnx",
+        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0514/lane_quant_0512_org.onnx.folded.onnx",
+        # default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0512/lane_ep02_q.onnx",
         help="onnx path")
     parser.add_argument("-e", "--engine", type=str, 
         # default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/debug_python/lane_ep148_n1.trt",
-        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/debug_python/lane_ep148_ptq.trt",
+        default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0514/lane_quant_0512_org.onnx.folded.onnx",
+        # default="/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0512/lane_ep02_q.trt",
         help="engine path")
     parser.add_argument("-p", "--precision", type=str,
         # default="FP16", help="INT8|FP16|FP32")
@@ -32,10 +36,28 @@ def make_parser():
     return parser
 
 
-outputs_fp = ['537', '344', '372']
-outputs_int = ['490', '491', '492', '608']
-outputs_size_fp = {'537': (1, 18, 512, 960), '344': (1, 18, 512, 960), '372': (1, 20, 254, 478)}
-outputs_size_int = {'490': (1, 18, 512, 960), '491': (1, 18, 512, 960), '492': (1, 18, 512, 960), '608': (1, 20, 254, 478)}
+# outputs_fp = ['537', '344', '372']
+# outputs_int = ['490', '491', '492', '552', '608', '1032', '1064', '1067',
+#                '1069', '1121', '1123', '1137', '1149', '1150', '1162', '1163', '1164', '1178', '1190']
+# outputs_size_fp = {'537': (1, 18, 512, 960), '344': (1, 18, 512, 960), '372': (1, 20, 254, 478)}
+# outputs_size_int = {'490': (1, 18, 512, 960), '491': (1, 18, 512, 960), '492': (1, 18, 512, 960),
+#                     '552': (1, 128, 128, 240),  # detail.out
+#                     '608': (1, 20, 254, 478), # segbranch.Stem
+#                     '1032': (1, 64, 32, 60), # segbranch.Nonlocal
+#                     '1064': (1, 64, 32, 60), # segbranch.CE
+#                     '1067': (1, 128, 32, 60), # segbranch.concat
+#                     '1069': (1, 128, 32, 60), # ffm.maxpool2
+#                     '1121': (1, 128, 128, 240), # ffm.left(mul)
+#                     '1123': (1, 128, 32, 60), # ffm.sigmul
+#                     '1137': (1, 128, 32, 60), # ffm.cbr
+#                     '1149': (1, 128, 128, 240), # ffm.right
+#                     '1150': (1, 128, 128, 240), # ffm.out
+#                     '1162': (1, 64, 128, 240), '1163': (1, 64, 128, 240), '1164': (1, 64, 128, 240),
+#                     '1178': (1, 32, 128, 240), '1190': (1, 3, 128, 240)}
+outputs_fp = []
+outputs_int = []
+outputs_size_fp = {}
+outputs_size_int = {}
 outputs_mark = {'FP16': {'out': outputs_fp, 'size': outputs_size_fp},
                 'INT8': {'out': outputs_int, 'size': outputs_size_int}}
 
@@ -59,16 +81,16 @@ def get_image_processed(image_path):
     return image
 
 
-def post_process(output_raw, output_save_path, index=0):
+def post_process(output_raw, output_save_path, index=0, cls=3):
     output_data = np.array(output_raw[index])
     output_data = np.argmax(output_data, 1).squeeze(0)
     # print(output_data.shape)
-    image_output = output_data*100
+    image_output = output_data*int(255/cls)
     cv2.imwrite(output_save_path, image_output)
     return
 
 
-# ---------------- TRT Debug Begn ----------------
+# ---------------- TRT Debug Begin ----------------
 
 def _get_network_outputs(network):
     return [network.get_output(index).name for index in range(network.num_outputs)]
@@ -170,8 +192,12 @@ def trt_infer(image_path, onnx_file_path, engine_file_path, precision):
     output_shapes.extend(output_shapes_org)
     outputs_np = [output.reshape(shape) for output, shape in zip(trt_outputs, output_shapes)]
 
-    image_path_out = image_path + '.py.{}.jpg'.format(precision)
-    post_process(outputs_np, image_path_out, index=-2)
+    import re
+    name_ex = re.split('[./]', onnx_file_path)[-2]
+    image_path_out = image_path + '.py.{}.{}.{}.jpg'.format('lane', precision, name_ex)
+    post_process(outputs_np, image_path_out, index=-2, cls=3)
+    image_path_out = image_path + '.py.{}.{}.{}.jpg'.format('seg', precision, name_ex)
+    post_process(outputs_np, image_path_out, index=-1, cls=5)
 
 
 if __name__ == "__main__":
