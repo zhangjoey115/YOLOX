@@ -11,6 +11,12 @@ import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 
+from tqdm import tqdm
+from pytorch_quantization import quant_modules
+from pytorch_quantization import calib
+from pytorch_quantization import nn as quant_nn
+
+
 from yolox.data import DataPrefetcher
 from yolox.utils import (
     MeterBuffer,
@@ -29,8 +35,82 @@ from yolox.utils import (
     synchronize
 )
 
+def collect_stats(model, data_loader, num_batches):
+    """Feed data to the network and collect statistic"""
 
-class Trainer:
+    # Enable calibrators
+    for name, module in model.named_modules():
+        if isinstance(module, quant_nn.TensorQuantizer):
+            if module._calibrator is not None:
+                module.disable_quant()
+                module.enable_calib()
+            else:
+                module.disable()
+
+    dev = next(model.parameters()).device
+    for i, (image, _, _, _) in tqdm(enumerate(data_loader), total=num_batches):
+        # image_g = image.cuda()
+        # if image_g is None:
+        #     image_g = image.to(dev)
+        model(image.cuda())
+        if i >= num_batches:
+            break
+
+    # Disable calibrators
+    for name, module in model.named_modules():
+        if isinstance(module, quant_nn.TensorQuantizer):
+            if module._calibrator is not None:
+                module.enable_quant()
+                module.disable_calib()
+            else:
+                module.enable()
+
+
+def compute_amax(model, **kwargs):
+    # Load calib result
+    for name, module in model.named_modules():
+        if isinstance(module, quant_nn.TensorQuantizer):
+            if module._calibrator is not None:
+                if isinstance(module._calibrator, calib.MaxCalibrator):
+                    module.load_calib_amax(strict=False)
+                else:
+                    module.load_calib_amax(strict=False, **kwargs)
+#             print(F"{name:40}: {module}")
+    model.cuda()
+
+
+def prepare_model(exp, args, data_loader, num_pics=2):
+    # quant_desc_input = QuantDescriptor(calib_method='histogram')
+    # quant_nn.QuantConv2d.set_default_quant_desc_input(quant_desc_input)
+    # quant_nn.QuantLinear.set_default_quant_desc_input(quant_desc_input)
+
+    quant_modules.initialize()
+
+    model = exp.get_model()
+
+    file_dir = os.path.join(exp.output_dir, exp.exp_name)
+    if args.ckpt is None:
+        ckpt_file = os.path.join(file_dir, "best_ckpt.pth")
+    else:
+        ckpt_file = args.ckpt
+
+    ckpt = torch.load(ckpt_file)
+    if "model" in ckpt:
+        ckpt = ckpt["model"]
+    model.load_state_dict(ckpt)
+    model.head.decode_in_inference = False
+
+    model.eval()
+    model.cuda()
+    with torch.no_grad():
+        collect_stats(model, data_loader, num_batches=num_pics)
+        # compute_amax(model, method="percentile", percentile=99.99)
+        # compute_amax(model, method="percentile", percentile=99.9)
+        compute_amax(model, method="max")
+
+    return model
+
+class TrainerQuant:
     def __init__(self, exp, args):
         # init function only defines some basic attr, other attrs like model, optimizer are built in
         # before_train methods.
@@ -129,9 +209,18 @@ class Trainer:
         logger.info("args: {}".format(self.args))
         logger.info("exp value:\n{}".format(self.exp))
 
+        # data related init
+        self.start_epoch = 0
+        self.train_loader = self.exp.get_data_loader(
+            batch_size=self.args.batch_size,
+            is_distributed=self.is_distributed,
+            no_aug=True,
+            cache_img=self.args.cache,
+        )
+
         # model related init
         torch.cuda.set_device(self.local_rank)
-        model = self.exp.get_model()
+        model = prepare_model(self.exp, self.args, self.train_loader, 1)
         # logger.info(
         #     "Model Summary: {}".format(get_model_info(model, self.exp.test_size))
         # )
@@ -139,10 +228,6 @@ class Trainer:
 
         # solver related init
         self.optimizer = self.exp.get_optimizer(self.args.batch_size)
-
-        # value of epoch will be set in `resume_train`
-        model = self.resume_train(model)
-
         logger.info("Save init model before training start.")
         ckpt_state = {
             "start_epoch": 1,
@@ -276,42 +361,6 @@ class Trainer:
     @property
     def progress_in_iter(self):
         return self.epoch * self.max_iter + self.iter
-
-    def resume_train(self, model):
-        if self.args.resume:
-            logger.info("resume training")
-            if self.args.ckpt is None:
-                ckpt_file = os.path.join(self.file_name, "latest" + "_ckpt.pth")
-            else:
-                ckpt_file = self.args.ckpt
-
-            ckpt = torch.load(ckpt_file, map_location=self.device)
-            # resume the model/optimizer state dict
-            model.load_state_dict(ckpt["model"])
-            self.optimizer.load_state_dict(ckpt["optimizer"])
-            # resume the training states variables
-            start_epoch = (
-                self.args.start_epoch - 1
-                if self.args.start_epoch is not None
-                else ckpt["start_epoch"]
-            )
-            self.start_epoch = start_epoch
-            logger.info(
-                "loaded checkpoint '{}' (epoch {})".format(
-                    self.args.resume, self.start_epoch
-                )
-            )  # noqa
-        else:
-            if self.args.ckpt is not None:
-                logger.info("loading checkpoint for fine tuning")
-                ckpt_file = self.args.ckpt
-                ckpt = torch.load(ckpt_file, map_location=self.device)
-                if 'model' in ckpt:
-                    ckpt = ckpt["model"]
-                model = load_ckpt(model, ckpt)
-            self.start_epoch = 0
-
-        return model
 
     def evaluate_and_save_model(self):
         if self.use_model_ema:

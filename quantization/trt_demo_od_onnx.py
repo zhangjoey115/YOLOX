@@ -32,7 +32,7 @@ def make_parser():
 
     parser.add_argument(
         # "--path", default="./datasets/tsr_voc/tt100k_voc_dataset/train_remain/", help="path to images or video"
-        "--path", default="/home/zjw/workspace/AI/tools/TensorRT_test/img_test_1024_1920/23_new.jpg", help="path to images or video"
+        "--path", default="/home/zjw/workspace/AI/perception/vision_learning/deployment/sample_int8/test_pic/test.jpeg", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -314,24 +314,6 @@ def main(exp, args):
     if args.device == "gpu":
         model.cuda()
     model.eval()
-
-    if not args.trt:
-        if args.ckpt is None:
-            # ckpt_file = os.path.join(file_name, "best_ckpt.pth")
-            ckpt_file = os.path.join(file_name, "best_ptq_t200.pth")
-        else:
-            ckpt_file = args.ckpt
-        logger.info("loading checkpoint")
-        ckpt = torch.load(ckpt_file, map_location="cpu")
-        # load the model state dict
-        if "model" in ckpt:
-            ckpt = ckpt["model"]
-        model.load_state_dict(ckpt)
-        logger.info("loaded checkpoint done.")
-
-    if args.fuse:
-        logger.info("\tFusing model...")
-        model = fuse_model(model)
 
     if args.trt:
         assert not args.fuse, "TensorRT model is not support model fusing!"

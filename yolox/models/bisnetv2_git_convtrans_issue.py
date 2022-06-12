@@ -8,8 +8,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from pytorch_quantization import nn as quant_nn
-
 
 np_dict = {}
 
@@ -43,18 +41,13 @@ class CEBlock(nn.Module):
         self.bn = nn.BatchNorm2d(channel)
         self.conv_gap = ConvBNReLU(channel, channel, 1, stride=1, padding=0)
         self.conv_last = ConvBNReLU(channel, channel, 3, stride=1)
-        self.quantizer = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer2 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer3 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer4 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer5 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
 
     def forward(self, x):
-        feat = torch.mean(self.quantizer(x), dim=(2,3), keepdim=True)
-        feat = self.bn(self.quantizer4(feat))
-        feat = self.conv_gap(self.quantizer5(feat))
-        feat = self.quantizer3(feat) * self.quantizer(x)
-        feat = self.quantizer2(feat) + self.quantizer(x)
+        feat = torch.mean(x, dim=(2,3), keepdim=True)
+        feat = self.bn(feat)
+        feat = self.conv_gap(feat)
+        feat = feat * x
+        feat = feat + x
         feat = self.conv_last(feat)
         return feat
 
@@ -93,20 +86,14 @@ class SpatialAttention(nn.Module):
         self.conv1 = ConvBNReLU(2, 1, 3, stride=1, padding=1)
         self.sigmoid = nn.Sigmoid()
         self.relu = nn.ReLU(inplace=True)
-        self.quantizer = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer2 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer3 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer4 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer5 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
 
     def forward(self, x):
-        # x = self.quantizer(x)
-        avg_out = torch.mean(self.quantizer(x), dim=1, keepdim=True)
-        max_out, _ = torch.max(self.quantizer(x), dim=1, keepdim=True)
+        avg_out = torch.mean(x, dim=1, keepdim=True)
+        max_out, _ = torch.max(x, dim=1, keepdim=True)
         out = torch.cat([avg_out, max_out], dim=1)
-        out = self.conv1(self.quantizer4(out))
-        out = self.sigmoid(self.quantizer5(out))
-        output = self.quantizer(x) + self.quantizer2(self.quantizer(x)*self.quantizer3(out))
+        out = self.conv1(out)
+        out = self.sigmoid(out)
+        output = x + x*out
         output = self.relu(output)
         return output
 
@@ -134,14 +121,6 @@ class NonLocalBlockND(nn.Module):
                                kernel_size=1, stride=1, padding=0)
         self.phi = nn.Conv2d(in_channels=self.in_channels, out_channels=self.inter_channels,
                              kernel_size=1, stride=1, padding=0)
-        self.quantizer = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer2 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer3 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer4 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer5 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer6 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer7 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer8 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
 
     def forward(self, x):
         batch_size = x.size(0)
@@ -154,11 +133,12 @@ class NonLocalBlockND(nn.Module):
         f = torch.matmul(theta_x, phi_x)
         f_div_C = F.softmax(f, dim=-1)
 
-        y = torch.matmul(f_div_C, self.quantizer6(g_x))
+        y = torch.matmul(f_div_C, g_x)
         y = y.permute(0, 2, 1).contiguous()
         y = y.view(batch_size, self.inter_channels, *x.size()[2:])
         W_y = self.W(y)
-        z = W_y + self.quantizer2(x)
+        z = W_y + x
+        # np_dict['np_seg.nonlocal1'] = z.cpu().detach().numpy()
         return z
 
 
@@ -181,41 +161,39 @@ class BGALayer(nn.Module):
             nn.BatchNorm2d(channel_config[0]),
             nn.Conv2d(channel_config[0], channel_config[0], kernel_size=1, stride=1, padding=0, bias=False),
         )
-        # self.conv = nn.Sequential(
-        #     nn.Conv2d(channel_config[0], channel_config[0], kernel_size=3, stride=2, padding=1, bias=False),
-        #     nn.BatchNorm2d(channel_config[0]),
-        #     nn.ReLU(inplace=True),
-        # )
+        self.conv = nn.Sequential(
+            nn.Conv2d(channel_config[0], channel_config[0], kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(channel_config[0]),
+            nn.ReLU(inplace=True),
+        )
         self.right_conv = ConvBNReLU(channel_config[0], channel_config[0], 3, stride=1, padding=1)
         
-        from pytorch_quantization import quant_modules
-        quant_modules.deactivate()
+        # from pytorch_quantization import quant_modules
+        # quant_modules.deactivate()
         self.right1_deconv = nn.ConvTranspose2d(channel_config[0], channel_config[0], 4, 4, padding=0, output_padding=0, bias=True)
         self.right_deconv_1 = nn.ConvTranspose2d(channel_config[0], channel_config[0], 4, 4, padding=0, output_padding=0, bias=True)
-        quant_modules.initialize()
-
-        self.quantizer = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer2 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer3 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer4 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer5 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer6 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer7 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
+        # quant_modules.initialize()
 
     def forward(self, feat_d, feat_r):
         dsize = feat_d.size()[2:]
         feat_s, feat_4 = feat_r
-        feat_d = self.quantizer3(feat_d)
         left2 = self.left2(feat_d)
+        # np_dict['np_ffm.maxpool2'] = left2.cpu().detach().numpy()
         right1 = self.right1(feat_4)
         right2 = self.right2(feat_s)
         right1 = self.right1_deconv(right1)
 
-        left = feat_d * self.quantizer6(torch.sigmoid(self.quantizer4(right1)))
-        right = left2 * self.quantizer7(torch.sigmoid(self.quantizer5(right2)))
+        left = feat_d * torch.sigmoid(right1)
+        right = left2 * torch.sigmoid(right2)
+        # np_dict['np_ffm.sigmul'] = right.cpu().detach().numpy()
         right = self.right_conv(right)
+        # np_dict['np_ffm.cbr'] = right.cpu().detach().numpy()
         right = self.right_deconv_1(right)
-        out = self.quantizer(left) + self.quantizer2(right)
+        return right
+        out = left + right
+        # np_dict['np_ffm.left'] = left.cpu().detach().numpy()
+        # np_dict['np_ffm.right'] = right.cpu().detach().numpy()
+        # np_dict['np_ffm.out'] = out.cpu().detach().numpy()
         return out
 
 
@@ -269,15 +247,12 @@ class GELayerS1(nn.Module):
         )
         self.conv2[1].last_bn = True
         self.relu = nn.ReLU(inplace=True)
-        self.quantizer = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer2 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
 
     def forward(self, x):
-        # x = self.quantizer(x)
         feat = self.conv1(x)
         feat = self.dwconv(feat)
         feat = self.conv2(feat)
-        feat = feat + self.quantizer(x)
+        feat = feat + x
         feat = self.relu(feat)
         return feat
 
@@ -308,8 +283,6 @@ class GELayerS2(nn.Module):
             nn.BatchNorm2d(out_chan),
         )
         self.relu = nn.ReLU(inplace=True)
-        self.quantizer = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer2 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
 
     def forward(self, x):
         feat = self.conv1(x)
@@ -317,7 +290,7 @@ class GELayerS2(nn.Module):
         feat = self.dwconv2(feat)
         feat = self.conv2(feat)
         shortcut = self.shortcut(x)
-        feat = feat + self.quantizer2(shortcut)
+        feat = feat + shortcut
         feat = self.relu(feat)
         return feat
 
@@ -333,8 +306,6 @@ class SegmentBranch(nn.Module):
         self.S5_1 = NonLocalBlockND(channel_config[5])
         self.S5_2 = CEBlock(channel_config[5])
         self.pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.quantizer = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer2 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
 
     def forward(self, x):
         feat2 = self.S1S2(x)            # 1/8
@@ -345,8 +316,8 @@ class SegmentBranch(nn.Module):
         feat5_1 = self.S5_1(feat4_2)    # 1/32
         # np_dict['np_seg.np_nonlocal'] = feat5_1.cpu().detach().numpy()
         feat5_2 = self.S5_2(feat5_1)
-        feat3_1_pool = self.pool(self.quantizer(feat3_1))
-        feat3_2_pool = self.pool(self.quantizer2(feat3_2))
+        feat3_1_pool = self.pool(feat3_1)
+        feat3_2_pool = self.pool(feat3_2)
         feat4 = torch.cat([feat3_1_pool, feat3_2_pool, feat4_2], dim=1)
         # np_dict['np_seg.np_concat'] = feat4.cpu().detach().numpy()
         # np_dict['np_seg.np_ce'] = feat5_2.cpu().detach().numpy()
@@ -366,17 +337,15 @@ class DetailBranch(nn.Module):
         self.conv5 = ConvBNReLU(channel_config[3], channel_config[3], 1, stride=1, padding=0)  # 1/8
         self.conv6 = ConvBNReLU(channel_config[3], channel_config[4], 3, stride=1)  # 1/8
         self.pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.quantizer = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer2 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
 
     def forward(self, x):
         feat_1 = self.conv1(x)
         feat_3 = self.conv3(feat_1)
         feat_4 = self.conv4(feat_3)
 
-        feat_pool_1 = self.pool(self.quantizer(feat_1))
+        feat_pool_1 = self.pool(feat_1)
         feat_pool_1 = self.pool(feat_pool_1)
-        feat_pool_3 = self.pool(self.quantizer2(feat_3))
+        feat_pool_3 = self.pool(feat_3)
         
         feat = torch.cat([feat_pool_1, feat_pool_3, feat_4], 1)
         feat = self.conv5(feat)
@@ -437,6 +406,7 @@ class SegNet(nn.Module):
         detail_feat = self.Detail_branch(x)
         seg_feat = self.Seg_branch(x)
         ffm_feat = self.ffm(detail_feat, seg_feat)
+        return ffm_feat
         lane_head_feat = self.lane_head(ffm_feat)
         roadway_head_feat = self.roadway_head(ffm_feat)
         if self.train_flag is True:

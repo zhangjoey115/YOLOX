@@ -9,6 +9,8 @@ import torch
 
 
 def load_ckpt(model, ckpt):
+    model.load_state_dict(ckpt)     # QAT test
+
     model_state_dict = model.state_dict()
     load_dict = {}
     for key_model, v in model_state_dict.items():

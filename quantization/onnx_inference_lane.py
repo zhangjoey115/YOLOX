@@ -31,20 +31,30 @@ def image_process(image_path):
 def onnx_run():
     image_path = '/home/zjw/workspace/AI/perception/YOLOX/models/lane/image/000349.jpg'
     # onnx_path = "/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0514/lane_0514_q1_4.onnx"
-    onnx_path = "/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0514/lane_quant_0512_org.onnx.folded.onnx"
+    # onnx_path = "/home/zjw/workspace/AI/perception/YOLOX/models/lane/model_release/test_0514/lane_quant_0512_org.onnx.folded.onnx"
+    onnx_path = "/home/zjw/Downloads/lane_latest_iou_double_head_0525.onnx"
 
     image_input = image_process(image_path)
     session = rt.InferenceSession(onnx_path)
+    input = session.get_inputs()[0]
     input_name = session.get_inputs()[0].name
     output_name = session.get_outputs()[0].name
 
     pred_onnx = session.run([], {input_name: image_input})
 
-    output_data = np.array(pred_onnx[0])
-    output_data = np.argmax(output_data, 1).squeeze(0)
+    output_data = np.array(pred_onnx[1])
+    use_outside_argmax = False
+    if use_outside_argmax is True:
+        output_data = np.argmax(output_data, 1).squeeze(0)
+        image_output = output_data*100
+    else:
+        output_data = output_data.squeeze(0).squeeze(0)
+        max_v = np.max(output_data)
+        scale = int(255/max_v)
+        image_output = output_data*scale
+        image_output = image_output.astype(int)
     print(output_data.shape)
 
-    image_output = output_data*100
 
     import re
     name_ex = re.split('[./]', onnx_path)[-2]

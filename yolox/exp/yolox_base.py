@@ -205,6 +205,11 @@ class Exp(BaseExp):
 
             pg0, pg1, pg2 = [], [], []  # optimizer parameter groups
 
+            params, modules = [], []
+            for param in self.model.parameters():
+                params.append(param)
+            for module in self.model.named_modules():
+                modules.append(module)
             for k, v in self.model.named_modules():
                 if hasattr(v, "bias") and isinstance(v.bias, nn.Parameter):
                     pg2.append(v.bias)  # biases

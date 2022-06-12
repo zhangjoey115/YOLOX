@@ -34,9 +34,13 @@ class YOLOPAFPN_OD(nn.Module):
         Conv = DWConv if depthwise else BaseConv
 
         # self.upsample = nn.Upsample(scale_factor=2, mode="nearest")
+        self.deconv00 = nn.ConvTranspose2d(int(in_channels[3] * width), int(in_channels[2] * width), 2, 2)
         self.deconv1 = nn.ConvTranspose2d(int(in_channels[1] * width), int(in_channels[1] * width), 2, 2)
         self.deconv2 = nn.ConvTranspose2d(int(in_channels[0] * width), int(in_channels[0] * width), 2, 2)
 
+        self.lateral_conv00 = BaseConv(
+            int(in_channels[3] * width), int(in_channels[2] * width), 1, 1, act=act
+        )
         self.lateral_conv0 = BaseConv(
             int(in_channels[2] * width), int(in_channels[1] * width), 1, 1, act=act
         )
@@ -52,6 +56,16 @@ class YOLOPAFPN_OD(nn.Module):
         self.reduce_conv1 = BaseConv(
             int(in_channels[1] * width), int(in_channels[0] * width), 1, 1, act=act
         )
+
+        self.C4_p4 = CSPLayer(
+            int(2 * in_channels[2] * width),
+            int(in_channels[2] * width),
+            round(3 * depth),
+            False,
+            depthwise=depthwise,
+            act=act,
+        )
+
         self.C3_p3 = CSPLayer(
             int(2 * in_channels[0] * width),
             int(in_channels[0] * width),
@@ -87,6 +101,13 @@ class YOLOPAFPN_OD(nn.Module):
             act=act,
         )
 
+        self.bu_conv4_0 = Conv(
+            int(in_channels[4] * width), int(in_channels[4] * width), 3, 2, act=act
+        )
+        self.bu_conv4_1 = Conv(
+            int(in_channels[4] * width), int(in_channels[4] * width), 3, 2, act=act
+        )
+
         if self.task == 'od':
             self.bu_conv0 = Conv(
                 int(in_channels[2] * width), int(in_channels[2] * width), 3, 2, act=act
@@ -100,8 +121,16 @@ class YOLOPAFPN_OD(nn.Module):
                 act=act,
             )
 
-            self.bu_conv00 = Conv(
-                int(in_channels[3] * width), int(in_channels[3] * width), 3, 2, act=act
+            # self.bu_conv00 = Conv(
+            #     int(in_channels[3] * width), int(in_channels[3] * width), 3, 2, act=act
+            # )
+            self.C4_n5 = CSPLayer(
+                int(2 * in_channels[3] * width),
+                int(in_channels[4] * width),
+                round(3 * depth),
+                False,
+                depthwise=depthwise,
+                act=act,
             )
 
     def forward(self, input):
@@ -120,7 +149,11 @@ class YOLOPAFPN_OD(nn.Module):
         # [x2, x1, x0] = features
         [x2, x1, x0, x] = features
 
-        fpn_out0 = self.lateral_conv0(x0)  # 1024->512/32
+        x00 = self.deconv00(x)
+        fpn_out0 = torch.cat([x00, x0], 1)
+        fpn_out0 = self.C4_p4(fpn_out0)
+
+        fpn_out0 = self.lateral_conv0(fpn_out0)  # 1024->512/32
         # # f_out0 = self.upsample(fpn_out0)  # 512/16
         f_out0 = self.deconv1(fpn_out0)  # 512/16
         f_out0 = torch.cat([f_out0, x1], 1)  # 512->1024/16
@@ -142,13 +175,16 @@ class YOLOPAFPN_OD(nn.Module):
 
         if self.task == 'od':
             p_out00 = self.bu_conv0(pan_out0)  # 512->512/32
-            x0_0 = x
+            x0_0 = self.lateral_conv00(x)
             p_out00 = torch.cat([p_out00, x0_0], 1)  # 256->512/16
-            pan_out00 = self.C3_n5(p_out00)  # 1024->1024/32
+            pan_out0_1 = self.C3_n5(p_out00)  # 1024->1024/32
+            pan_out0_2 = self.bu_conv4_0(pan_out0_1)
+            x0_2 = self.bu_conv4_1(x)
 
-            pan_out000 = self.bu_conv00(pan_out00)  # 1024->1024/32
+            pan_out000 = torch.cat([pan_out0_2, x0_2], 1)
+            pan_out000 = self.C4_n5(pan_out000)  # 1024->1024/64
 
-            outputs = (pan_out2, pan_out1, pan_out0, pan_out00, pan_out000)
+            outputs = (pan_out2, pan_out1, pan_out0, pan_out0_1, pan_out000)
         else:
             outputs = (pan_out2, pan_out1, pan_out0)
         return outputs

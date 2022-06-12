@@ -96,17 +96,15 @@ class SpatialAttention(nn.Module):
         self.quantizer = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
         self.quantizer2 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
         self.quantizer3 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer4 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
-        self.quantizer5 = quant_nn.TensorQuantizer(quant_nn.QuantConv2d.default_quant_desc_input)
 
     def forward(self, x):
-        # x = self.quantizer(x)
-        avg_out = torch.mean(self.quantizer(x), dim=1, keepdim=True)
-        max_out, _ = torch.max(self.quantizer(x), dim=1, keepdim=True)
+        x = self.quantizer(x)
+        avg_out = torch.mean(x, dim=1, keepdim=True)
+        max_out, _ = torch.max(x, dim=1, keepdim=True)
         out = torch.cat([avg_out, max_out], dim=1)
-        out = self.conv1(self.quantizer4(out))
-        out = self.sigmoid(self.quantizer5(out))
-        output = self.quantizer(x) + self.quantizer2(self.quantizer(x)*self.quantizer3(out))
+        out = self.conv1(out)
+        out = self.sigmoid(out)
+        output = x + self.quantizer2(x*self.quantizer3(out))
         output = self.relu(output)
         return output
 
@@ -181,11 +179,11 @@ class BGALayer(nn.Module):
             nn.BatchNorm2d(channel_config[0]),
             nn.Conv2d(channel_config[0], channel_config[0], kernel_size=1, stride=1, padding=0, bias=False),
         )
-        # self.conv = nn.Sequential(
-        #     nn.Conv2d(channel_config[0], channel_config[0], kernel_size=3, stride=2, padding=1, bias=False),
-        #     nn.BatchNorm2d(channel_config[0]),
-        #     nn.ReLU(inplace=True),
-        # )
+        self.conv = nn.Sequential(
+            nn.Conv2d(channel_config[0], channel_config[0], kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(channel_config[0]),
+            nn.ReLU(inplace=True),
+        )
         self.right_conv = ConvBNReLU(channel_config[0], channel_config[0], 3, stride=1, padding=1)
         
         from pytorch_quantization import quant_modules

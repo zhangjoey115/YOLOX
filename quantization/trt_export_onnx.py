@@ -104,14 +104,23 @@ def main():
         ckpt_file = args.ckpt
 
     # load the model state dict
-    ckpt = torch.load(ckpt_file)
-    logger.info("\n{}".format(ckpt))
+    ckpt = torch.load(ckpt_file, map_location="cuda:0")
+    # logger.info("\n{}".format(ckpt))
     # return
 
     model.eval()
     if "model" in ckpt:
         ckpt = ckpt["model"]
-    model.load_state_dict(ckpt)
+
+    ckpt_new = {}
+    for k, v in ckpt.items():
+        if not "module" in k:
+            ckpt_new = ckpt
+            break
+        else:
+            ckpt_new[k[7:]] = v
+    model.load_state_dict(ckpt_new)
+
     model = replace_module(model, nn.SiLU, SiLU)
     if "head" in model.__dict__['_modules']:
         model.head.decode_in_inference = False
@@ -119,7 +128,7 @@ def main():
 
     logger.info("loading checkpoint done.")
     # dummy_input = torch.randn(args.batch_size, 3, exp.test_size[0], exp.test_size[1])
-    dummy_input = torch.rand(args.batch_size, 3, exp.test_size[0], exp.test_size[1]) * 255
+    dummy_input = torch.rand(args.batch_size, 3, exp.test_size[0], exp.test_size[1])
     # dummy_input = read_img_input(exp)
 
    # ------------- Quantization -------------
@@ -139,7 +148,7 @@ def main():
         output_names=[args.output],
         dynamic_axes={args.input: {0: 'batch'},
                       args.output: {0: 'batch'}} if args.dynamic else None,
-        verbose=True, 
+        # verbose=True, 
         opset_version=args.opset,
     )
     logger.info("generated onnx model named {}".format(args.output_name))

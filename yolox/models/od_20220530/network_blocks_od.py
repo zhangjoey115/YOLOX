@@ -128,7 +128,7 @@ class SPPBottleneck(nn.Module):
     """Spatial pyramid pooling layer used in YOLOv3-SPP"""
 
     def __init__(
-        self, in_channels, out_channels, kernel_sizes=(5, 9, 13), activation="silu", quant=False
+        self, in_channels, out_channels, kernel_sizes=(5, 5, 5, 7, 7), activation="silu", quant=False
         # self, in_channels, out_channels, kernel_sizes = (5, 7), activation = "silu"
     ):
         super().__init__()
@@ -150,11 +150,11 @@ class SPPBottleneck(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         # if self.quant:
-        #     x = self.quantizer(x)
+        x = self.quantizer(x)
         # x = torch.cat([x] + [m(x) for m in self.m], dim=1)
         # x = torch.cat([x] + [m(self.quantizer(x)) for m in self.m], dim=1)
         # # m = nn.MaxPool2d
-        x = torch.cat([self.quantizer(x)] + [m(self.quantizer(x)) for m in self.m], dim=1)
+        x = torch.cat([x] + [m(x) for m in self.m], dim=1)
         x = self.conv2(x)
         return x
 

@@ -170,12 +170,12 @@ class CSPDarknet(nn.Module):
         if self.task == 'od':
             self.dark6 = nn.Sequential(
                 Conv(base_channels * 16, base_channels * 32, 3, 2, act=act),
-                SPPBottleneck(base_channels * 32, base_channels * 32, activation=act, quant=True),
+                # SPPBottleneck(base_channels * 32, base_channels * 32, activation=act, quant=True),
                 CSPLayer(
                     base_channels * 32,
-                    base_channels * 16,
-                    n=base_depth,
-                    shortcut=False,
+                    base_channels * 32,  # 16,
+                    n=base_depth*3,
+                    # shortcut=False,
                     depthwise=depthwise,
                     act=act,
                 ),

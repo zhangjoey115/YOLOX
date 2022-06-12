@@ -7,32 +7,32 @@ import torch.distributed as dist
 
 from yolox.data import get_yolox_datadir
 from yolox.exp import Exp as MyExp
-from yolox.data.datasets.od_classes import OD_CLASSES
+from yolox.data.datasets.tt100k_classes import TT100K_CLASSES
 
 
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
-        self.num_classes = len(OD_CLASSES)   # len(TT100K_CLASSES)      # 3    # 45
+        self.num_classes = len(TT100K_CLASSES)      # 3    # 45
         self.depth = 0.33
         self.width = 0.25
         self.warmup_epochs = 1
-        self.max_epoch = 1
+        self.max_epoch = 100
         self.no_aug_epochs = 20
         self.no_aug_eval_epochs = 5
         self.eval_interval = 5
         self.basic_lr_per_img = 1.0e-3 / 8.0      # devide batch_size
         self.min_lr_ratio = 0.01
+        # self.input_size = (416, 416)
+        # self.test_size = (416, 416)
         self.input_size = (1024, 1920)
         self.test_size = (1024, 1920)
         # self.multiscale_range = 0
         self.mixup_prob = 0.0       # 1.0
         self.mosaic_scale = (0.5, 2)
-        # self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
-        # self.exp_name = "test_nano640_210906/yolox_tt100k_nano11_640Pre_newCs_mulR0_0_0.5_20_1e-3"
-        self.exp_name = "od_test_13_20220529/od_train_fine"
+        self.exp_name = "seg_test_20220505/seg_test_20220505_finetune"
 
-    def get_model(self, sublinear=False):
+    def get_model(self, train_flag=False, sublinear=False):
 
         def init_yolo(M):
             for m in M.modules():
@@ -40,20 +40,22 @@ class Exp(MyExp):
                     m.eps = 1e-3
                     m.momentum = 0.03
         if "model" not in self.__dict__:
-            from yolox.models import YOLOX_OD, YOLOPAFPN_OD, YOLOXHead_OD
-            # in_channels = [256, 512, 1024]
-            in_channels = [256, 512, 1024, 2048, 2048]
-            strides = [8, 16, 32, 64, 64]
-            # NANO model use depthwise = True, which is main difference.
-            backbone = YOLOPAFPN_OD(self.depth, self.width, in_channels=in_channels, depthwise=False, act='relu')
+            from yolox.models import SegNet
 
-            num_classes = {'full_box': 13, 'front_box': 3, 'side_box': 3}
-            head = YOLOXHead_OD(num_classes, self.width, strides=strides, in_channels=in_channels, depthwise=False, act='relu')
-            self.model = YOLOX_OD(backbone, head)
+            DetailBranch_config = [18, 30, 50, 98, 128]
+            SementBranch_config = [10, 20, 40, 24, 32, 64]
+            BGALayer_config = [128, 64]
+            SegmentHead_confg = [128, 64]
+            Aux_SegmentHead_confg = [64, 64]
+            lane_class = 7
+            roadway_class = 5
+            train_flag = train_flag
+            self.model = SegNet(DetailBranch_config, SementBranch_config, BGALayer_config, 
+                                SegmentHead_confg, Aux_SegmentHead_confg, lane_class, roadway_class, train_flag)
 
-        self.model.apply(init_yolo)
-        self.model.head.initialize_biases(1e-2)
+        # self.model.apply(init_yolo)
         return self.model
+
 
     def get_data_loader(self, batch_size, is_distributed, no_aug=False, cache_img=False):
         from yolox.data import (

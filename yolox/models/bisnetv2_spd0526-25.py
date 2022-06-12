@@ -181,11 +181,11 @@ class BGALayer(nn.Module):
             nn.BatchNorm2d(channel_config[0]),
             nn.Conv2d(channel_config[0], channel_config[0], kernel_size=1, stride=1, padding=0, bias=False),
         )
-        # self.conv = nn.Sequential(
-        #     nn.Conv2d(channel_config[0], channel_config[0], kernel_size=3, stride=2, padding=1, bias=False),
-        #     nn.BatchNorm2d(channel_config[0]),
-        #     nn.ReLU(inplace=True),
-        # )
+        self.conv = nn.Sequential(
+            nn.Conv2d(channel_config[0], channel_config[0], kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(channel_config[0]),
+            nn.ReLU(inplace=True),
+        )
         self.right_conv = ConvBNReLU(channel_config[0], channel_config[0], 3, stride=1, padding=1)
         
         from pytorch_quantization import quant_modules

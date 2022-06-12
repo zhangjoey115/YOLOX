@@ -40,7 +40,7 @@ class Exp(MyExp):
                     m.eps = 1e-3
                     m.momentum = 0.03
         if "model" not in self.__dict__:
-            from yolox.models import YOLOX_OD, YOLOPAFPN_OD, YOLOXHead_OD
+            from yolox.models.od_20220530 import YOLOX_OD, YOLOPAFPN_OD, YOLOXHead_OD
             # in_channels = [256, 512, 1024]
             in_channels = [256, 512, 1024, 2048, 2048]
             strides = [8, 16, 32, 64, 64]
